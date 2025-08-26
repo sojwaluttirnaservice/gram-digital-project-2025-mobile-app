@@ -21,3 +21,11 @@ npm install --dev tailwindcss@^3.4.17 prettier-plugin-tailwindcss@^0.5.11
 npx expo install @react-native-picker/picker
 npm i clsx
 npm i e
+
+
+============ UI LIBRARY ===================
+npm i @ui-kitten/components @eva-design/eva @ui-kitten/eva-icons @ui-kitten/moment @ui-kitten/date-fns
+
+USING VERSION 5.3.0
+
+https://akveo.github.io/react-native-ui-kitten/

@@ -57,7 +57,7 @@ import { Image, Platform, Pressable, Text, TextInput, View } from "react-native"
  * @param {string} [props.testID]
  * @param {...any} [rest] - Any valid TextInput props get forwarded.
  */
-const Input = forwardRef(function Input(props, ref) {
+const Input2 = forwardRef(function Input(props, ref) {
     const {
         mode = "text",
         label,
@@ -287,4 +287,4 @@ const Input = forwardRef(function Input(props, ref) {
     );
 });
 
-export default Input;
+export default Input2;
