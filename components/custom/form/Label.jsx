@@ -43,7 +43,7 @@ const Label = ({
                 accessibilityLabel={accessibilityLabel}
                 accessibilityHint={accessibilityDescribedBy}
                 className={clsx(
-                    "text-sm font-semibold text-white tracking-wide mb-1",
+                    "text-sm font-bold text-gray-800 tracking-wide mb-1",
                     className
                 )}
                 {...rest}
