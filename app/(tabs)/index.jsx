@@ -5,8 +5,12 @@ import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
 import { H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
+import { websites } from "@/data/websites";
+import { setServerUrl } from "@/redux/slices/connectionSlice";
+import { Picker } from '@react-native-picker/picker';
 import { useEffect, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
 
 const HomeScreen = () => {
@@ -15,10 +19,20 @@ const HomeScreen = () => {
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
 
+
+
+
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
 
 
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
+
+
+    const { serverUrl, isDev } = useSelector(state => state.connection)
+
+    const dispatch = useDispatch()
+
+
 
 
 
@@ -44,10 +58,9 @@ const HomeScreen = () => {
 
         try {
 
-            const res = await fetch("http://192.168.1.12:5900/form-8/update-home-image", {
+            const res = await fetch(`${serverUrl}/form-8/update-home-image`, {
                 method: "PUT",
                 body: formData,
-
             });
 
             const data = await res.json();
@@ -70,7 +83,7 @@ const HomeScreen = () => {
             setSearchText(text);
             setIsLoading(true);
 
-            const res = await fetch("http://192.168.1.12:5900/get-user-info", {
+            const res = await fetch(`${serverUrl}/get-user-info`, {
                 method: "POST",
                 body: JSON.stringify({
                     q: text,
@@ -95,7 +108,7 @@ const HomeScreen = () => {
     const handleSearchUser = async (f8UserId) => {
         try {
 
-            const res = await fetch("http://192.168.1.12:5900/form-8/getSingleUserDetails", {
+            const res = await fetch(`${serverUrl}/form-8/getSingleUserDetails`, {
                 method: "POST",
                 body: JSON.stringify({
                     id: f8UserId
@@ -127,6 +140,25 @@ const HomeScreen = () => {
     return (
         <ScreenWrapper scroll>
             <View className="sticky top-0">
+
+
+                <View className="border border-gray-300 rounded-lg overflow-hidden">
+                    <Picker
+                        selectedValue={serverUrl}
+                        onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
+                        dropdownIconColor="#374151" // optional: arrow color
+                        style={{ color: "#111827", backgroundColor: "white" }} // text visible
+                    >
+                        {websites.map((websiteRecord) => (
+                            <Picker.Item
+                                key={websiteRecord.website}
+                                label={websiteRecord.villageName}
+                                value={websiteRecord.website}
+                            />
+                        ))}
+                    </Picker>
+                </View>
+
                 <View className="py-2">
                     <Label className="text-lg text-center">मालमत्ता धारक निवडा</Label>
 

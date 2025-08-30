@@ -2,6 +2,7 @@ import { noImageFoundFallbackImage } from "@/access-files/access-images/fallback
 import { Image } from "expo-image";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useSelector } from "react-redux";
 
 /**
  * ServerImage Props
@@ -10,7 +11,6 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
  * @property {string} [fallback] - Fallback image URI if loading fails
  * @property {string} [placeholder] - Optional placeholder while loading
  * @property {"lazy"|"eager"} [loading] - Lazy or eager loading (default: 'eager')
- * @property {string} [serverUrl] - Base server URL (default: http://192.168.1.12:5900)
  * @property {object} [style] - React Native style for container
  * @property {string} [className] - Tailwind className for container (nativewind)
  * @property {number} [blurRadius] - Blur effect while loading (default 0)
@@ -30,7 +30,6 @@ const ServerImage = ({
     fallback,
     placeholder,
     loading = "eager",
-    serverUrl = "http://192.168.1.12:5900",
     style,
     className,
     blurRadius = 0,
@@ -47,7 +46,10 @@ const ServerImage = ({
         setImageSrc(src || placeholder);
     }, [src, placeholder]);
 
-    const fullUri = imageSrc?.startsWith("http") ? imageSrc : `${serverUrl}${imageSrc}`;
+
+    const { serverUrl } = useSelector(state => state.connection)
+
+    const fullUri = `${imageSrc}`?.startsWith("http") ? imageSrc : `${serverUrl}${imageSrc}`;
 
     // Optional: merge Tailwind className with inline styles
     const containerStyle = [styles.container, style];
@@ -63,7 +65,7 @@ const ServerImage = ({
             )}
             <Image
                 source={fullUri}
-                style={[StyleSheet.absoluteFill, style]}
+                style={[{ width: "100%", height: "100%" }, style]}
                 contentFit="cover"
                 transition={300}
                 loading={loading}
@@ -78,11 +80,7 @@ const ServerImage = ({
                     onLoadEnd?.(e);
                 }}
                 onError={(e) => {
-                    if (fallback) {
-                        setImageSrc(fallback.startsWith("http") ? fallback : `${serverUrl}${fallback}`);
-                    }else{
-                        setImageSrc(noImageFoundFallbackImage)
-                    }
+                    setImageSrc(fallback || noImageFoundFallbackImage)
                     setIsLoading(false);
                     onError?.(e);
                 }}
