@@ -28,7 +28,8 @@ export default function RootLayout() {
 
             <SafeAreaProvider>
                 <SafeAreaView
-                    style={{ flex: 1, background: "white" }}
+                    style={{ flex: 1, background: "white"}}
+                    
                     edges={['top', 'left', 'right']}
                 >
 
@@ -40,7 +41,7 @@ export default function RootLayout() {
                     </Stack>
                     <StatusBar style="auto" />
 
-                </SafeAreaView>
+                </SafeAreaView> 
             </SafeAreaProvider>
         </ThemeProvider>
     );

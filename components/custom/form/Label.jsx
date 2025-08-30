@@ -1,6 +1,6 @@
-import clsx from "clsx";
 import React from "react";
 import { Text, View } from "react-native";
+import { twMerge } from "tailwind-merge";
 
 /**
  * Label component for form inputs in React Native.
@@ -42,7 +42,7 @@ const Label = ({
             <Text
                 accessibilityLabel={accessibilityLabel}
                 accessibilityHint={accessibilityDescribedBy}
-                className={clsx(
+                className={twMerge(
                     "text-sm font-bold text-gray-800 tracking-wide mb-1",
                     className
                 )}

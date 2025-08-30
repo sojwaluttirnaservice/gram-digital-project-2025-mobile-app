@@ -1,10 +1,13 @@
 import Autocomplete from "@/components/custom/form/Autocomplete";
+import FileInput from "@/components/custom/form/FileInput";
 import Label from "@/components/custom/form/Label";
 import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
-import { H5, H6 } from "@/components/custom/typography/Heading";
+import { H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
+import ServerImage from "@/components/custom/utils/ServerImage";
 import { useEffect, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
+
 
 const HomeScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -13,6 +16,51 @@ const HomeScreen = () => {
 
 
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
+
+
+    const [selectedHomeImage, setSelectedHomeImage] = useState(null)
+
+
+
+    const handleFileChange = (file) => {
+        console.log("Picked file:", file);
+        setSelectedHomeImage(file); // { uri, name, size, mimeType, kind }
+    };
+
+
+    const handleUpload = async () => {
+        if (!selectedHomeImage) {
+            Alert("Please select a file first");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("homeImage", {
+            uri: selectedHomeImage.uri,
+            name: selectedHomeImage.name || "upload.jpg",
+            type: selectedHomeImage.mimeType || "application/octet-stream",
+        });
+        formData.append('id', selectedMalmattaDharak.id)
+
+        try {
+
+            const res = await fetch("http://192.168.1.12:5900/form-8/update-home-image", {
+                method: "PUT",
+                body: formData,
+
+            });
+
+            const data = await res.json();
+
+            let { success, message } = data;
+
+            if (success) {
+                Alert.alert(message)
+            }
+        } catch (err) {
+            console.error("Upload error:", err);
+        }
+    };
 
     // API search
     const handleMalmattaDharakSearch = async (text) => {
@@ -36,6 +84,7 @@ const HomeScreen = () => {
             const resData = await res.json();
             const { call: idLabelPairs } = resData;
             setIdLabelPairs(idLabelPairs || []);
+
         } catch (err) {
             console.log(err?.message);
         } finally {
@@ -72,13 +121,14 @@ const HomeScreen = () => {
         console.log(selectedMalmattaDharak)
     }, [selectedMalmattaDharak])
 
-    return (
-        <ScreenWrapper>
-            <View className="sticky top-0">
-                <H6 className="text-white">मालमत्ता धारक यादी</H6>
 
-                <View className="bg-white border border-gray-600 px-2 py-1">
-                    <Label>Select the मालमत्ता धारक</Label>
+
+
+    return (
+        <ScreenWrapper scroll>
+            <View className="sticky top-0">
+                <View className="py-2">
+                    <Label className="text-lg text-center">मालमत्ता धारक निवडा</Label>
 
                     {/* ✅ Integrated Autocomplete */}
                     <Autocomplete
@@ -112,9 +162,7 @@ const HomeScreen = () => {
                     This is the heading color
                 </H5>
 
-                <View>
-
-
+                <View className="px-2">
                     <View>
                         {
                             selectedMalmattaDharak &&
@@ -253,14 +301,50 @@ const HomeScreen = () => {
                                             </View>
                                         </Card>
 
-
-
                                         <Card>
+
+
+                                            <View>
+                                                <Text>HomeImagePreview</Text>
+                                                <ServerImage
+                                                    className='size-20'
+                                                    src={`/home_map_image/home_photo/${selectedMalmattaDharak.feu_image || `${selectedMalmattaDharak.feu_malmattaNo}.jpeg`}`}
+                                                    loading={'lazy'}
+                                                />
+                                            </View>
+
+
                                             <Label>Upload an home Image</Label>
                                             <View>
-
+                                                <FileInput onChange={handleFileChange} />
                                             </View>
                                         </Card>
+
+
+
+
+                                        <View>
+                                            <TouchableOpacity
+                                                onPress={handleUpload}
+                                                style={{
+                                                    backgroundColor: "#1d4ed8",
+                                                    paddingVertical: 12,
+                                                    paddingHorizontal: 20,
+                                                    borderRadius: 8,
+                                                    alignItems: "center",
+                                                    marginTop: 10, // optional spacing
+                                                }}
+                                            >
+                                                <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+                                                    Upload
+                                                </Text>
+                                            </TouchableOpacity>
+
+                                        </View>
+
+
+
+
                                     </View>
                                 </>
                             )
