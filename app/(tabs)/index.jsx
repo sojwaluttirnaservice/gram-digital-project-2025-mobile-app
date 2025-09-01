@@ -6,12 +6,12 @@ import { H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
 import { websites } from "@/data/websites";
+import useCompress from "@/hooks/custom/useCompress";
 import { setServerUrl } from "@/redux/slices/connectionSlice";
 import { Picker } from '@react-native-picker/picker';
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-
 
 const HomeScreen = () => {
     const [searchText, setSearchText] = useState("");
@@ -19,41 +19,44 @@ const HomeScreen = () => {
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
 
-
-
+    const { compressImage } = useCompress()
 
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
 
 
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
+    const { serverUrl } = useSelector(state => state.connection)
 
-    const { serverUrl, isDev } = useSelector(state => state.connection)
 
     const dispatch = useDispatch()
 
-
-
-
-
     const handleFileChange = (file) => {
-        console.log("Picked file:", file);
         setSelectedHomeImage(file); // { uri, name, size, mimeType, kind }
     };
 
 
     const handleUpload = async () => {
         if (!selectedHomeImage) {
-            Alert("Please select a file first");
+            Alert.alert("Please select a file first");
             return;
         }
 
+
+        const compressed = await compressImage(selectedHomeImage.uri)
+        // 2️⃣ Read file info for FormData
+        // const fileInfo = await FileSystem.getInfoAsync(compressed.uri);
+        const fileName = selectedHomeImage.name || 'upload.jpg';
+
         const formData = new FormData();
         formData.append("homeImage", {
-            uri: selectedHomeImage.uri,
-            name: selectedHomeImage.name || "upload.jpg",
+            uri: compressed.uri,
+            name: fileName || "upload.jpg",
             type: selectedHomeImage.mimeType || "application/octet-stream",
         });
+
+
+
         formData.append('id', selectedMalmattaDharak.id)
 
         try {
@@ -69,6 +72,7 @@ const HomeScreen = () => {
 
             if (success) {
                 Alert.alert(message)
+                handleSearchUser(selectedMalmattaDharak.id)
             }
         } catch (err) {
             console.error("Upload error:", err);
@@ -79,7 +83,6 @@ const HomeScreen = () => {
     const handleMalmattaDharakSearch = async (text) => {
         try {
 
-            console.log("the vlaue is = ", text)
             setSearchText(text);
             setIsLoading(true);
 
@@ -120,19 +123,19 @@ const HomeScreen = () => {
 
             const resData = await res.json();
 
-            console.log(resData.data)
+            // console.log(resData.data)
 
             setSelectedMalmattaDharak(resData.data)
+            setSelectedHomeImage(null)
 
         } catch (err) {
             console.log(err)
         }
     };
 
-    useEffect(() => {
-        console.log("Selected dharak ================")
-        console.log(selectedMalmattaDharak)
-    }, [selectedMalmattaDharak])
+    // useEffect(() => {
+    //     console.log(selectedMalmattaDharak)
+    // }, [selectedMalmattaDharak])
 
 
 
@@ -339,7 +342,8 @@ const HomeScreen = () => {
                                             <View>
                                                 <Text>HomeImagePreview</Text>
                                                 <ServerImage
-                                                    className='size-20'
+                                                    className='w-full h-52'
+                                                    imageClassName={'w-full h-full'}
                                                     src={`/home_map_image/home_photo/${selectedMalmattaDharak.feu_image || `${selectedMalmattaDharak.feu_malmattaNo}.jpeg`}`}
                                                     loading={'lazy'}
                                                 />
@@ -348,7 +352,9 @@ const HomeScreen = () => {
 
                                             <Label>Upload an home Image</Label>
                                             <View>
-                                                <FileInput onChange={handleFileChange} />
+                                                <FileInput
+                                                    onChange={handleFileChange}
+                                                />
                                             </View>
                                         </Card>
 

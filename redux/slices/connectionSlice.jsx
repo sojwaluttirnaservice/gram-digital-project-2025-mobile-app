@@ -11,13 +11,20 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
  */
 
 /** @type {ConnectionState} */
+
+
+// const PROJECT_MODE = "PROD"
+const PROJECT_MODE = "DEV"
+
+let isDev = PROJECT_MODE !== "PROD"
+
 const initialState = {
-    serverUrl: null, // default server URL
+    serverUrl: isDev ? "http://192.168.1.2:5900" : null, // default server URL
     mainUrl: "https://g-seva.com",   // example main API URL
     apiKey: null,                          // optional API key or token
     isConnected: true,                     // network connection status
     timeout: 10000,                        // default timeout for requests
-    isDev: false
+    isDev: isDev
 };
 
 const connectionSlice = createSlice({
