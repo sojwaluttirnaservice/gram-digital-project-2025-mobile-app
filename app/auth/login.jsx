@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { gSevaInstance } from '../../api/gSevaInstance';
 
 const initialState = {
     id: '',
@@ -27,12 +28,19 @@ const LoginScreen = () => {
     const handleLogin = async () => {
 
 
-        const res = await axios.post(`${connection.mainUrl}/auth/login`, user)
-        
+        const res = await fetch(`${connection.mainUrl}/auth/login`, user)
 
-        console.log(res.data)
+        let resData = await res.json();
 
-        dispatch(login(user))
+        let { success, data } = resData
+
+        if (success) { 
+            dispatch(login(data.user))
+            router.replace("/(tabs)")
+        }
+
+
+
     };
 
     return (
@@ -40,7 +48,7 @@ const LoginScreen = () => {
             <View className="flex-1 justify-center px-6 bg-white">
                 {/* Title */}
                 <Text className="text-3xl font-bold mb-8 text-gray-800 text-center">
-                    Welcome Back 
+                    Welcome Back
                 </Text>
 
                 {/* Form */}

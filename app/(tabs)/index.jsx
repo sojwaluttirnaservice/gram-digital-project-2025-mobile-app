@@ -28,6 +28,7 @@ const HomeScreen = () => {
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
     const { serverUrl } = useSelector(state => state.connection)
+    const user = useSelector(state => state.user)
 
 
     const dispatch = useDispatch()
@@ -59,6 +60,8 @@ const HomeScreen = () => {
 
 
         formData.append('id', selectedMalmattaDharak.id)
+        formData.append('home_image_upload_person_user_id', user.id)
+        formData.append('home_image_upload_person_username', user.username)
 
         try {
 
