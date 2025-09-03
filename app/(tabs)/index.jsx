@@ -9,6 +9,7 @@ import { websites } from "@/data/websites";
 import useCompress from "@/hooks/custom/useCompress";
 import { setServerUrl } from "@/redux/slices/connectionSlice";
 import { Picker } from '@react-native-picker/picker';
+import { Redirect } from "expo-router";
 import { useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
@@ -136,6 +137,13 @@ const HomeScreen = () => {
     // useEffect(() => {
     //     console.log(selectedMalmattaDharak)
     // }, [selectedMalmattaDharak])
+
+
+    const user = useSelector(state => state.user)
+
+    if(!user || !user.isAuthenticated){
+        return <Redirect href={'/auth'}/>
+    }
 
 
 

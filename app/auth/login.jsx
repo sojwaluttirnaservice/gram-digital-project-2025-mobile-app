@@ -1,0 +1,101 @@
+import Label from '@/components/custom/form/Label';
+import ScreenWrapper from '@/components/custom/screens/ScreenWrapper';
+import { login } from '@/redux/slices/userSlice';
+import { Feather } from '@expo/vector-icons';
+import axios from 'axios';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+
+const initialState = {
+    id: '',
+    username: '',
+    password: '',
+};
+
+const LoginScreen = () => {
+    const router = useRouter();
+    const [user, setUser] = useState(initialState);
+    const [showPassword, setShowPassword] = useState(false);
+
+    const connection = useSelector(state => state.connection)
+
+
+    const dispatch = useDispatch()
+
+    const handleLogin = async () => {
+
+
+        const res = await axios.post(`${connection.mainUrl}/auth/login`, user)
+        
+
+        console.log(res.data)
+
+        dispatch(login(user))
+    };
+
+    return (
+        <ScreenWrapper>
+            <View className="flex-1 justify-center px-6 bg-white">
+                {/* Title */}
+                <Text className="text-3xl font-bold mb-8 text-gray-800 text-center">
+                    Welcome Back 
+                </Text>
+
+                {/* Form */}
+                <View className="space-y-6">
+                    {/* Username */}
+                    <View>
+                        <Label>Username</Label>
+                        <TextInput
+                            placeholder="Enter your username"
+                            value={user.username}
+                            onChangeText={(text) => setUser({ ...user, username: text })}
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 text-base"
+                        />
+                    </View>
+
+                    {/* Password */}
+                    <View>
+                        <Label>Password</Label>
+                        <TextInput
+                            placeholder="Enter your password"
+                            secureTextEntry={!showPassword}
+                            value={user.password}
+                            onChangeText={(text) => setUser({ ...user, password: text })}
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 text-base"
+                        />
+                        <Pressable
+                            onPress={() => setShowPassword(!showPassword)}
+                            className="mt-2 self-end"
+                        >
+                            <View className="flex flex-row gap-2">
+
+                                <Feather
+                                    name={showPassword ? "eye" : "eye-off"}
+                                    size={20}
+                                    color="#6b7280"
+                                />
+                            </View>
+                        </Pressable>
+                    </View>
+
+
+                    {/* Button */}
+
+                    <View className='mt-4'>
+                        <Pressable
+                            onPress={handleLogin}
+                            className="w-full bg-blue-600 rounded-xl py-4 items-center shadow-md active:opacity-80"
+                        >
+                            <Text className="text-white font-semibold text-lg">Login</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </View>
+        </ScreenWrapper>
+    );
+};
+
+export default LoginScreen;

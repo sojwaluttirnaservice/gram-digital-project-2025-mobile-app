@@ -20,7 +20,7 @@ let isDev = PROJECT_MODE !== "PROD"
 
 const initialState = {
     serverUrl: isDev ? "http://192.168.1.2:5900" : null, // default server URL
-    mainUrl: "https://g-seva.com",   // example main API URL
+    mainUrl: "http://10.133.13.155:3000" || "https://g-seva.com",   // example main API URL
     apiKey: null,                          // optional API key or token
     isConnected: true,                     // network connection status
     timeout: 10000,                        // default timeout for requests
