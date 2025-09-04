@@ -2,12 +2,10 @@ import Label from '@/components/custom/form/Label';
 import ScreenWrapper from '@/components/custom/screens/ScreenWrapper';
 import { login } from '@/redux/slices/userSlice';
 import { Feather } from '@expo/vector-icons';
-import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { gSevaInstance } from '../../api/gSevaInstance';
 
 const initialState = {
     id: '',
@@ -17,7 +15,7 @@ const initialState = {
 
 const LoginScreen = () => {
     const router = useRouter();
-    const [user, setUser] = useState(initialState);
+    const [inputUser, setInputUser] = useState(initialState);
     const [showPassword, setShowPassword] = useState(false);
 
     const connection = useSelector(state => state.connection)
@@ -28,7 +26,13 @@ const LoginScreen = () => {
     const handleLogin = async () => {
 
 
-        const res = await fetch(`${connection.mainUrl}/auth/login`, user)
+        const res = await fetch(`${connection.mainUrl}/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify(inputUser),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
 
         let resData = await res.json();
 
@@ -58,8 +62,8 @@ const LoginScreen = () => {
                         <Label>Username</Label>
                         <TextInput
                             placeholder="Enter your username"
-                            value={user.username}
-                            onChangeText={(text) => setUser({ ...user, username: text })}
+                            value={inputUser.username}
+                            onChangeText={(text) => setInputUser({ ...inputUser, username: text })}
                             className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 text-base"
                         />
                     </View>
@@ -70,8 +74,8 @@ const LoginScreen = () => {
                         <TextInput
                             placeholder="Enter your password"
                             secureTextEntry={!showPassword}
-                            value={user.password}
-                            onChangeText={(text) => setUser({ ...user, password: text })}
+                            value={inputUser.password}
+                            onChangeText={(text) => setInputUser({ ...inputUser, password: text })}
                             className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 text-base"
                         />
                         <Pressable

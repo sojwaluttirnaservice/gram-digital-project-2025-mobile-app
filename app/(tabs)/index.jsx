@@ -5,12 +5,12 @@ import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
 import { H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
-import { websites } from "@/data/websites";
 import useCompress from "@/hooks/custom/useCompress";
 import { setServerUrl } from "@/redux/slices/connectionSlice";
+import { setWebsites } from "@/redux/slices/websitesSlice";
 import { Picker } from '@react-native-picker/picker';
 import { Redirect } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -27,8 +27,16 @@ const HomeScreen = () => {
 
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
-    const { serverUrl } = useSelector(state => state.connection)
+    const { serverUrl, mainUrl } = useSelector(state => state.connection)
     const user = useSelector(state => state.user)
+
+    const websites = useSelector(state => state.websites)
+
+
+    useEffect(() => {
+        console.log(user)
+        console.log(websites)
+    }, [user, websites])
 
 
     const dispatch = useDispatch()
@@ -137,15 +145,40 @@ const HomeScreen = () => {
         }
     };
 
-    // useEffect(() => {
-    //     console.log(selectedMalmattaDharak)
-    // }, [selectedMalmattaDharak])
+    useEffect(() => {
+
+        const fetchWebsites = async () => {
+            try {
+                let res = await fetch(`${mainUrl}/websites`)
+
+                const resData = await res.json()
+
+                let { success, data } = resData
 
 
-    const user = useSelector(state => state.user)
+                if (success) {
+                    dispatch(setWebsites(data.websites))
+                }
+            } catch (err) {
+                console.error(err)
+            }
+        }
 
-    if(!user || !user.isAuthenticated){
-        return <Redirect href={'/auth'}/>
+
+        fetchWebsites()
+
+    }, [])
+
+
+
+    useEffect(() => {
+
+
+        console.log("server url changed===", serverUrl)
+    }, [serverUrl])
+
+    if (!user || !user.isAuthenticated) {
+        return <Redirect href={'/auth'} />
     }
 
 
@@ -157,20 +190,38 @@ const HomeScreen = () => {
 
 
                 <View className="border border-gray-300 rounded-lg overflow-hidden">
-                    <Picker
-                        selectedValue={serverUrl}
-                        onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
-                        dropdownIconColor="#374151" // optional: arrow color
-                        style={{ color: "#111827", backgroundColor: "white" }} // text visible
-                    >
-                        {websites.map((websiteRecord) => (
+                    {websites?.length > 0 && (
+                        <Picker
+                            selectedValue={serverUrl}
+                            onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
+                            dropdownIconColor="#374151" // arrow color
+                            style={{ color: "#111827", backgroundColor: "white" }} // text color + bg
+                        >
+                            {/* Default placeholder */}
                             <Picker.Item
-                                key={websiteRecord.website}
-                                label={websiteRecord.villageName}
-                                value={websiteRecord.website}
+                                key="placeholder"
+                                label="-- Select --"
+                                value=""
                             />
-                        ))}
-                    </Picker>
+
+                            {/* Local option for testing */}
+                            <Picker.Item
+                                key="local"
+                                label="Local"
+                                value="http://192.168.1.2:5900"
+                            />
+
+                            {/* Dynamic websites list */}
+                            {websites.map((web, idx) => (
+                                <Picker.Item
+                                    key={web.id || idx}
+                                    label={web.grampanchayat_name || web.village_name || `Website ${idx + 1}`}
+                                    value={web.website_link}
+                                />
+                            ))}
+                        </Picker>
+                    )}
+
                 </View>
 
                 <View className="py-2">

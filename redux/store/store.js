@@ -2,11 +2,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { connectionReducer } from "../slices/connectionSlice";
 import { userReducer } from "../slices/userSlice";
+import { websitesReducer } from "../slices/websitesSlice";
 
 const store = configureStore({
     reducer: {
         connection: connectionReducer,
-        user: userReducer
+        user: userReducer,
+        websites: websitesReducer,
         // add more slices here if needed
     },
 });
