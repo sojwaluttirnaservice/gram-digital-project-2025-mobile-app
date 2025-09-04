@@ -13,8 +13,9 @@ import { createSlice } from "@reduxjs/toolkit";
 /** @type {ConnectionState} */
 
 
-const PROJECT_MODE = "PROD"
-// const PROJECT_MODE = "DEV"
+
+const PROJECT_MODE = process.env.EXPO_PUBLIC_PROJECT_ENV
+
 
 let isDev = PROJECT_MODE !== "PROD"
 

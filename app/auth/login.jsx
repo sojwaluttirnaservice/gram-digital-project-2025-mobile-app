@@ -6,11 +6,12 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useApi } from '../../hooks/custom/useApi';
 
 const initialState = {
     id: '',
-    username: '',
-    password: '',
+    username: 's',
+    password: 's',
 };
 
 const LoginScreen = () => {
@@ -20,30 +21,23 @@ const LoginScreen = () => {
 
     const connection = useSelector(state => state.connection)
 
+    const { instance } = useApi()
+
 
     const dispatch = useDispatch()
 
     const handleLogin = async () => {
 
+    
+        let { success, data } = await instance.post('/auth/login', inputUser)
 
-        const res = await fetch(`${connection.mainUrl}/auth/login`, {
-            method: 'POST',
-            body: JSON.stringify(inputUser),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
 
-        let resData = await res.json();
+        console.log(success, data)
 
-        let { success, data } = resData
-
-        if (success) { 
+        if (success) {
             dispatch(login(data.user))
             router.replace("/(tabs)")
         }
-
-
 
     };
 
