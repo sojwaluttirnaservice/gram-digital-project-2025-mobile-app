@@ -29,19 +29,12 @@ const HomeScreen = () => {
 
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
-    const { serverUrl, mainUrl } = useSelector(state => state.connection)
+    
     const user = useSelector(state => state.user)
 
-    const websites = useSelector(state => state.websites)
+    
 
 
-    useEffect(() => {
-        console.log(user)
-        console.log(websites)
-    }, [user, websites])
-
-
-    const dispatch = useDispatch()
 
     const handleFileChange = (file) => {
         setSelectedHomeImage(file); // { uri, name, size, mimeType, kind }
@@ -92,7 +85,7 @@ const HomeScreen = () => {
             setIdLabelPairs(idLabelPairs || []);
 
         } catch (err) {
-            console.log(err?.message);
+            console.error(err?.message);
         } finally {
             setIsLoading(false);
         }
@@ -110,33 +103,7 @@ const HomeScreen = () => {
         }
     };
 
-    useEffect(() => {
 
-        const fetchWebsites = async () => {
-            try {
-
-                let { success, data } = await instance.get('/websites')
-
-                if (success) {
-                    dispatch(setWebsites(data.websites))
-                }
-            } catch (err) {
-                console.error(err)
-            }
-        }
-
-
-        fetchWebsites()
-
-    }, [])
-
-
-
-    useEffect(() => {
-
-
-        console.log("server url changed===", serverUrl)
-    }, [serverUrl])
 
     if (!user || !user.isAuthenticated) {
         return <Redirect href={'/auth'} />
@@ -150,40 +117,7 @@ const HomeScreen = () => {
             <View className="sticky top-0">
 
 
-                <View className="border border-gray-300 rounded-lg overflow-hidden">
-                    {websites?.length > 0 && (
-                        <Picker
-                            selectedValue={serverUrl}
-                            onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
-                            dropdownIconColor="#374151" // arrow color
-                            style={{ color: "#111827", backgroundColor: "white" }} // text color + bg
-                        >
-                            {/* Default placeholder */}
-                            <Picker.Item
-                                key="placeholder"
-                                label="-- Select --"
-                                value=""
-                            />
-
-                            {/* Local option for testing */}
-                            <Picker.Item
-                                key="local"
-                                label="Local"
-                                value="http://192.168.1.2:5900"
-                            />
-
-                            {/* Dynamic websites list */}
-                            {websites.map((web, idx) => (
-                                <Picker.Item
-                                    key={web.id || idx}
-                                    label={web.grampanchayat_name || web.village_name || `Website ${idx + 1}`}
-                                    value={web.website_link}
-                                />
-                            ))}
-                        </Picker>
-                    )}
-
-                </View>
+                
 
                 <View className="py-2">
                     <Label className="text-lg text-center">मालमत्ता धारक निवडा</Label>

@@ -39,7 +39,6 @@ const connectionSlice = createSlice({
          * @param {PayloadAction<string>} action
          */
         setServerUrl: (state, action) => {
-            console.log("settgin========================================================", action.payload)
             state.serverUrl = action.payload;
         },
 

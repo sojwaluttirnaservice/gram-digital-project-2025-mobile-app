@@ -3,10 +3,6 @@ import React from "react";
 
 const AuthLayout = () => {
 
-
-    console.log('Auth alyouts')
-
-
     return <Stack screenOptions={{ headerShown: false }} />
 
     // return <Stack/>

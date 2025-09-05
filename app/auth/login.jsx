@@ -1,9 +1,12 @@
 import Label from '@/components/custom/form/Label';
 import ScreenWrapper from '@/components/custom/screens/ScreenWrapper';
+import { setServerUrl } from '@/redux/slices/connectionSlice';
 import { login } from '@/redux/slices/userSlice';
+import { setWebsites } from '@/redux/slices/websitesSlice';
 import { Feather } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useApi } from '../../hooks/custom/useApi';
@@ -19,6 +22,12 @@ const LoginScreen = () => {
     const [inputUser, setInputUser] = useState(initialState);
     const [showPassword, setShowPassword] = useState(false);
 
+
+    const { serverUrl } = useSelector(state => state.connection)
+
+
+    const websites = useSelector(state => state.websites)
+
     const connection = useSelector(state => state.connection)
 
     const { instance } = useApi()
@@ -26,13 +35,34 @@ const LoginScreen = () => {
 
     const dispatch = useDispatch()
 
+
+
+
+    useEffect(() => {
+
+        const fetchWebsites = async () => {
+            try {
+
+                let { success, data } = await instance.get('/websites')
+
+                if (success) {
+                    dispatch(setWebsites(data.websites))
+                }
+            } catch (err) {
+                console.error(err)
+            }
+        }
+
+
+        fetchWebsites()
+
+    }, [])
+
     const handleLogin = async () => {
 
-    
+
         let { success, data } = await instance.post('/auth/login', inputUser)
 
-
-        console.log(success, data)
 
         if (success) {
             dispatch(login(data.user))
@@ -50,7 +80,7 @@ const LoginScreen = () => {
                 </Text>
 
                 {/* Form */}
-                <View className="space-y-6">
+                <View className="space-y-8">
                     {/* Username */}
                     <View>
                         <Label>Username</Label>
@@ -87,6 +117,45 @@ const LoginScreen = () => {
                         </Pressable>
                     </View>
 
+
+
+                    {/* Village Name */}
+                    <View>
+                        <View className="border border-gray-300 rounded-lg overflow-hidden">
+
+                            {websites?.length > 0 && (
+                                <Picker
+                                    selectedValue={serverUrl}
+                                    onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
+                                    dropdownIconColor="#374151" // arrow color
+                                    style={{ color: "#111827", backgroundColor: "white" }} // text color + bg
+                                >
+                                    {/* Default placeholder */}
+                                    <Picker.Item
+                                        key="placeholder"
+                                        label="-- Select --"
+                                        value=""
+                                    />
+
+                                    {/* Local option for testing */}
+                                    <Picker.Item
+                                        key="local"
+                                        label="Local"
+                                        value="http://192.168.1.2:5900"
+                                    />
+
+                                    {/* Dynamic websites list */}
+                                    {websites.map((web, idx) => (
+                                        <Picker.Item
+                                            key={web.id || idx}
+                                            label={web.grampanchayat_name || web.village_name || `Website ${idx + 1}`}
+                                            value={web.website_link}
+                                        />
+                                    ))}
+                                </Picker>
+                            )}
+                        </View>
+                    </View>
 
                     {/* Button */}
 
