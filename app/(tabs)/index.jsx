@@ -5,11 +5,13 @@ import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
 import { H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
-import { websites } from "@/data/websites";
+import { useApi } from "@/hooks/custom/useApi";
 import useCompress from "@/hooks/custom/useCompress";
 import { setServerUrl } from "@/redux/slices/connectionSlice";
+import { setWebsites } from "@/redux/slices/websitesSlice";
 import { Picker } from '@react-native-picker/picker';
-import { useState } from "react";
+import { Redirect } from "expo-router";
+import { useEffect, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -18,36 +20,33 @@ const HomeScreen = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
+    const { api, instance } = useApi()
+
 
     const { compressImage } = useCompress()
 
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
 
-
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
-    const { serverUrl } = useSelector(state => state.connection)
+    
+    const user = useSelector(state => state.user)
+
+    
 
 
-    const dispatch = useDispatch()
 
     const handleFileChange = (file) => {
         setSelectedHomeImage(file); // { uri, name, size, mimeType, kind }
     };
-
 
     const handleUpload = async () => {
         if (!selectedHomeImage) {
             Alert.alert("Please select a file first");
             return;
         }
-
-
         const compressed = await compressImage(selectedHomeImage.uri)
-        // 2️⃣ Read file info for FormData
-        // const fileInfo = await FileSystem.getInfoAsync(compressed.uri);
         const fileName = selectedHomeImage.name || 'upload.jpg';
-
         const formData = new FormData();
         formData.append("homeImage", {
             uri: compressed.uri,
@@ -55,20 +54,13 @@ const HomeScreen = () => {
             type: selectedHomeImage.mimeType || "application/octet-stream",
         });
 
-
-
         formData.append('id', selectedMalmattaDharak.id)
+        formData.append('home_image_upload_person_user_id', user.id)
+        formData.append('home_image_upload_person_username', user.username)
 
         try {
 
-            const res = await fetch(`${serverUrl}/form-8/update-home-image`, {
-                method: "PUT",
-                body: formData,
-            });
-
-            const data = await res.json();
-
-            let { success, message } = data;
+            let { success, message } = await api.put('/form-8/update-home-image', formData)
 
             if (success) {
                 Alert.alert(message)
@@ -82,27 +74,18 @@ const HomeScreen = () => {
     // API search
     const handleMalmattaDharakSearch = async (text) => {
         try {
-
             setSearchText(text);
             setIsLoading(true);
 
-            const res = await fetch(`${serverUrl}/get-user-info`, {
-                method: "POST",
-                body: JSON.stringify({
-                    q: text,
-                    sType: 2,
-                }),
-                headers: {
-                    "Content-Type": "application/json",
-                },
+            const { call: idLabelPairs } = await api.post('/get-user-info', {
+                q: text,
+                sType: 2
             });
 
-            const resData = await res.json();
-            const { call: idLabelPairs } = resData;
             setIdLabelPairs(idLabelPairs || []);
 
         } catch (err) {
-            console.log(err?.message);
+            console.error(err?.message);
         } finally {
             setIsLoading(false);
         }
@@ -110,22 +93,9 @@ const HomeScreen = () => {
 
     const handleSearchUser = async (f8UserId) => {
         try {
+            const { data } = await api.post('/form-8/getSingleUserDetails', { id: f8UserId })
 
-            const res = await fetch(`${serverUrl}/form-8/getSingleUserDetails`, {
-                method: "POST",
-                body: JSON.stringify({
-                    id: f8UserId
-                }),
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-
-            const resData = await res.json();
-
-            // console.log(resData.data)
-
-            setSelectedMalmattaDharak(resData.data)
+            setSelectedMalmattaDharak(data)
             setSelectedHomeImage(null)
 
         } catch (err) {
@@ -133,9 +103,11 @@ const HomeScreen = () => {
         }
     };
 
-    // useEffect(() => {
-    //     console.log(selectedMalmattaDharak)
-    // }, [selectedMalmattaDharak])
+
+
+    if (!user || !user.isAuthenticated) {
+        return <Redirect href={'/auth'} />
+    }
 
 
 
@@ -145,22 +117,7 @@ const HomeScreen = () => {
             <View className="sticky top-0">
 
 
-                <View className="border border-gray-300 rounded-lg overflow-hidden">
-                    <Picker
-                        selectedValue={serverUrl}
-                        onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
-                        dropdownIconColor="#374151" // optional: arrow color
-                        style={{ color: "#111827", backgroundColor: "white" }} // text visible
-                    >
-                        {websites.map((websiteRecord) => (
-                            <Picker.Item
-                                key={websiteRecord.website}
-                                label={websiteRecord.villageName}
-                                value={websiteRecord.website}
-                            />
-                        ))}
-                    </Picker>
-                </View>
+                
 
                 <View className="py-2">
                     <Label className="text-lg text-center">मालमत्ता धारक निवडा</Label>

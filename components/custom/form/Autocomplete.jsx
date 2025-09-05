@@ -99,10 +99,6 @@ const Autocomplete = ({
         [onChange]
     );
 
-    useEffect(() => {
-        // dev aid
-        // console.log("showList:", showList);
-    }, [showList]);
 
     /** Handle selecting an item */
     const handleSelect = useCallback(

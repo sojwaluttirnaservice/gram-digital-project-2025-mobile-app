@@ -35,10 +35,8 @@ export default function RootLayout() {
 
                         edges={['top', 'left', 'right']}
                     >
-
-                        
-
                         <Stack>
+                            <Stack.Screen name="auth" options={{ headerShown: false }} />
                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                             <Stack.Screen name="+not-found" />
                         </Stack>
@@ -50,3 +48,26 @@ export default function RootLayout() {
         </Provider>
     );
 }
+
+
+// const AuthOrApp = () => {
+
+//     let user = useSelector(state => state.user)
+
+
+//     let isLoggedIn = user && user.isAuthenticated && user.token
+
+//     console.log(isLoggedIn)
+
+
+//     return (
+//         <Stack>
+//             {isLoggedIn ? (
+//                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+//             ) : (
+//                 <Stack.Screen name="auth" options={{ headerShown: false }} />
+//             )}
+//             <Stack.Screen name="+not-found" />
+//         </Stack>
+//     )
+// }
