@@ -117,8 +117,6 @@ const HomeScreen = () => {
             <View className="sticky top-0">
 
 
-                
-
                 <View className="py-2">
                     <Label className="text-lg text-center">मालमत्ता धारक निवडा</Label>
 
