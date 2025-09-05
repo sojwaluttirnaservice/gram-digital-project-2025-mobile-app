@@ -1,23 +1,23 @@
 // store/userSlice.js
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+
 
 /**
  * @typedef {Object} UserState
- * @property {string} id - User ID
- * @property {string} username - Username
- * @property {string} name - Full name
- * @property {string} token - Auth token
- * @property {boolean} isAuthenticated - Auth status
+ * @property {string} id
+ * @property {string} username
+ * @property {string} name
+ * @property {string} token
+ * @property {boolean} isAuthenticated
  */
 
-/** @type {UserState} */
-const initialState = {
-    id: '',
-    username: '',
-    name: '',
-    token: '',
+const initialState = /** @type {UserState} */ ({
+    id: "",
+    username: "",
+    name: "",
+    token: "",
     isAuthenticated: false,
-};
+});
 
 const userSlice = createSlice({
     name: "user",
@@ -56,3 +56,4 @@ export const { login, logout } = userSlice.actions;
 const userReducer = userSlice.reducer;
 
 export { userReducer };
+

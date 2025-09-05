@@ -198,6 +198,7 @@ const Autocomplete = ({
                 >
                     {data.length > 0 ? (
                         <FlatList
+                            // disableVirtualization={true}
                             data={data.slice(0, maxEntries)}
                             keyExtractor={(_, index) => index.toString()}
                             renderItem={({ item, index }) =>

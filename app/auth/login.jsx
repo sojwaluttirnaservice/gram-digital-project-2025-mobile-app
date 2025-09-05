@@ -72,12 +72,14 @@ const LoginScreen = () => {
     };
 
     return (
-        <ScreenWrapper>
+        <ScreenWrapper >
             <View className="flex-1 justify-center px-6 bg-white">
                 {/* Title */}
                 <Text className="text-3xl font-bold mb-8 text-gray-800 text-center">
                     Welcome Back
                 </Text>
+
+                
 
                 {/* Form */}
                 <View className="space-y-8">

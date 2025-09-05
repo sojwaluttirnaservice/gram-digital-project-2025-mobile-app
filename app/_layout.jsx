@@ -1,73 +1,78 @@
-import "../global.css";
+import "../global.css"
+
+import React from 'react'
+// import { useFonts } from 'expo-font';
+// import { useColorScheme } from '@/hooks/useColorScheme';
 
 
-import { ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import store from "@/redux/store/store"
+import { Stack } from 'expo-router'
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context"
+import { Provider } from "react-redux"
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { MyTheme } from "@/themes";
 
-import store from "@/redux/store/store";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { Provider } from 'react-redux';
+/**
+    This Rootlayout is created because to smooth the auth flow
+    
+    The normal tabs and _layout were moved in protected so i can use redux use selector there and
+    also to Redirect to auth page when not logged in, because right now Redirect is not able to load the page
+    (but in future it will)
 
-export default function RootLayout() {
-    const colorScheme = useColorScheme();
-    const [loaded] = useFonts({
-        SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    });
+    Reference Video Link: https://www.youtube.com/watch?v=yNaOaR2kIa0
+ */
+const RootLayout = () => {
 
-    if (!loaded) {
-        // Async font loading only occurs in development.
-        return null;
-    }
 
+    //  const colorScheme = useColorScheme();
+    // const [loaded] = useFonts({
+    //     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
+    // });
+
+    // if (!loaded) {
+    //     // Async font loading only occurs in development.
+    //     return null;
+    // }
     return (
+
+
+        // Redux store provider
         <Provider store={store}>
-            <ThemeProvider value={MyTheme}>
 
-                <SafeAreaProvider>
-                    <SafeAreaView
-                        style={{ flex: 1, background: "white" }}
+            <SafeAreaProvider>
+                <SafeAreaView
+                    style={{ flex: 1, background: "white" }}
+                    edges={['top', 'left', 'right']}
+                >
+                    {/* Screen Stacking */}
+                    <Stack>
+                        {/* First Screen */}
+                        <Stack.Screen
+                            name="(protected)"
+                            options={{
+                                headerShown: false,
+                                animation: 'none'
+                            }}
+                        />
 
-                        edges={['top', 'left', 'right']}
-                    >
-                        <Stack>
-                            <Stack.Screen name="auth" options={{ headerShown: false }} />
-                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                            <Stack.Screen name="+not-found" />
-                        </Stack>
-                        <StatusBar style="auto" />
+                        {/* Second Screen */}
+                        <Stack.Screen
+                            name="auth"
+                            options={{
+                                headerShown: false,
+                                animation: 'none'
+                            }}
+                        />
+                    </Stack>
 
-                    </SafeAreaView>
-                </SafeAreaProvider>
-            </ThemeProvider>
+                    {/* Status Bar */}
+                    <StatusBar style="auto" />
+
+                </SafeAreaView>
+            </SafeAreaProvider>
         </Provider>
-    );
+
+    )
 }
 
-
-// const AuthOrApp = () => {
-
-//     let user = useSelector(state => state.user)
-
-
-//     let isLoggedIn = user && user.isAuthenticated && user.token
-
-//     console.log(isLoggedIn)
-
-
-//     return (
-//         <Stack>
-//             {isLoggedIn ? (
-//                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-//             ) : (
-//                 <Stack.Screen name="auth" options={{ headerShown: false }} />
-//             )}
-//             <Stack.Screen name="+not-found" />
-//         </Stack>
-//     )
-// }
+export default RootLayout

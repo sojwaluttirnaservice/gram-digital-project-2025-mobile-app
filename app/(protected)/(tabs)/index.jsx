@@ -7,20 +7,17 @@ import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
 import { useApi } from "@/hooks/custom/useApi";
 import useCompress from "@/hooks/custom/useCompress";
-import { setServerUrl } from "@/redux/slices/connectionSlice";
-import { setWebsites } from "@/redux/slices/websitesSlice";
-import { Picker } from '@react-native-picker/picker';
 import { Redirect } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSelector } from "react-redux";
 
 const HomeScreen = () => {
     const [searchText, setSearchText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
-    const { api, instance } = useApi()
+    const { api } = useApi()
 
 
     const { compressImage } = useCompress()
@@ -29,10 +26,10 @@ const HomeScreen = () => {
 
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
-    
+
     const user = useSelector(state => state.user)
 
-    
+
 
 
 
@@ -113,7 +110,7 @@ const HomeScreen = () => {
 
 
     return (
-        <ScreenWrapper scroll>
+        <ScreenWrapper>
             <View className="sticky top-0">
 
 
@@ -147,7 +144,7 @@ const HomeScreen = () => {
                 </View>
 
             </View>
-            <View>
+            <ScrollView>
                 <H5 className="text-white text-center">
                     This is the heading color
                 </H5>
@@ -344,7 +341,7 @@ const HomeScreen = () => {
                         }
                     </View>
                 </View>
-            </View>
+            </ScrollView>
         </ScreenWrapper>
     );
 };
