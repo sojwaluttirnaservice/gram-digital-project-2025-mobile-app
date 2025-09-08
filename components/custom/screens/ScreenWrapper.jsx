@@ -72,11 +72,12 @@ const ScreenWrapper = ({
                     ]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
+                    className="px-2"
                 >
                     {children}
                 </ScrollView>
             ) : (
-                <View style={[{ flex: 1 }, style]}>{children}</View>
+                <View style={[{ flex: 1 }, style]} className="px-2">{children}</View>
             )}
         </KeyboardAvoidingView>
     );

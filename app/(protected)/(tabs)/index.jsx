@@ -2,42 +2,37 @@ import Autocomplete from "@/components/custom/form/Autocomplete";
 import FileInput from "@/components/custom/form/FileInput";
 import Label from "@/components/custom/form/Label";
 import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
-import { H5 } from "@/components/custom/typography/Heading";
+import { H3, H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
 import { useApi } from "@/hooks/custom/useApi";
 import useCompress from "@/hooks/custom/useCompress";
-import { Redirect } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from "react-redux";
 
 const HomeScreen = () => {
+    // Utility
+    const { api } = useApi()
+    const { compressImage } = useCompress()
+
+    // States
     const [searchText, setSearchText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
-    const { api } = useApi()
-
-
-    const { compressImage } = useCompress()
 
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
-
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
-
+    const gp = useSelector(state => state.gp)
     const user = useSelector(state => state.user)
-
-
-
-
 
     const handleFileChange = (file) => {
         setSelectedHomeImage(file); // { uri, name, size, mimeType, kind }
     };
 
-    const handleUpload = async () => {
+    const handleHomeImageUpload = async () => {
         if (!selectedHomeImage) {
             Alert.alert("Please select a file first");
             return;
@@ -52,6 +47,7 @@ const HomeScreen = () => {
         });
 
         formData.append('id', selectedMalmattaDharak.id)
+        formData.append('malmatta_number', selectedMalmattaDharak.feu_malmattaNo)
         formData.append('home_image_upload_person_user_id', user.id)
         formData.append('home_image_upload_person_username', user.username)
 
@@ -69,13 +65,15 @@ const HomeScreen = () => {
     };
 
     // API search
-    const handleMalmattaDharakSearch = async (text) => {
+    const handleMalmattaDharakSearch = async (malmattaNumber) => {
         try {
-            setSearchText(text);
+
+            setSearchText(malmattaNumber);
             setIsLoading(true);
 
+            // HERE, q = Query and sType = Search Type
             const { call: idLabelPairs } = await api.post('/get-user-info', {
-                q: text,
+                q: malmattaNumber,
                 sType: 2
             });
 
@@ -90,9 +88,9 @@ const HomeScreen = () => {
 
     const handleSearchUser = async (f8UserId) => {
         try {
-            const { data } = await api.post('/form-8/getSingleUserDetails', { id: f8UserId })
+            const { data: malmattaDharakDetails } = await api.post('/form-8/getSingleUserDetails', { id: f8UserId })
 
-            setSelectedMalmattaDharak(data)
+            setSelectedMalmattaDharak(malmattaDharakDetails)
             setSelectedHomeImage(null)
 
         } catch (err) {
@@ -101,29 +99,22 @@ const HomeScreen = () => {
     };
 
 
-
-    if (!user || !user.isAuthenticated) {
-        return <Redirect href={'/auth'} />
-    }
-
-
-
+    // useEffect(() =>{
+    //     console.log(selectedMalmattaDharak)
+    // }, [selectedMalmattaDharak])
 
     return (
         <ScreenWrapper>
             <View className="sticky top-0">
-
-
-                <View className="py-2">
-                    <Label className="text-lg text-center">मालमत्ता धारक निवडा</Label>
-
-                    {/* ✅ Integrated Autocomplete */}
+                <View>
+                    <H3 className="text-center text-indigo-500 font-extrabold">ग्रामपंचायत : {gp ? gp.grampanchayat_name : '-'}</H3>
+                    <Label className="text-lg text-center">मालमत्ता क्रमांक टाकून धारक शोधा.</Label>
                     <Autocomplete
                         value={searchText}
                         onChange={handleMalmattaDharakSearch}
                         onSelect={(item) => handleSearchUser(item.id)}
                         data={idLabelPairs}
-                        placeholder="Do something"
+                        placeholder=""
                         loading={isLoading}
                         listClass="rounded-sm"
                         getDisplayValue={(item) => item.label}
@@ -142,14 +133,14 @@ const HomeScreen = () => {
                         )}
                     />
                 </View>
-
             </View>
+
             <ScrollView>
-                <H5 className="text-white text-center">
-                    This is the heading color
+                <H5 className="text-center">
+                    मालमत्ता धारकाची माहीती.
                 </H5>
 
-                <View className="px-2">
+                <View className="">
                     <View>
                         {
                             selectedMalmattaDharak &&
@@ -315,7 +306,7 @@ const HomeScreen = () => {
 
                                         <View>
                                             <TouchableOpacity
-                                                onPress={handleUpload}
+                                                onPress={handleHomeImageUpload}
                                                 style={{
                                                     backgroundColor: "#1d4ed8",
                                                     paddingVertical: 12,
@@ -338,6 +329,14 @@ const HomeScreen = () => {
                                     </View>
                                 </>
                             )
+                            // :
+                            // (
+                            //     <>
+                            //         <View>
+                            //             <Text>कोणताही संलग्न मालमत्ता धारक मिळाला नाही. </Text>
+                            //         </View>
+                            //     </>
+                            // )
                         }
                     </View>
                 </View>

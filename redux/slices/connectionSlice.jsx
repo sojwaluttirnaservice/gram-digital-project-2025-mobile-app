@@ -20,13 +20,12 @@ const PROJECT_MODE = process.env.EXPO_PUBLIC_PROJECT_ENV
 let isDev = PROJECT_MODE !== "PROD"
 
 const initialState = {
-    serverUrl: isDev ? "http://192.168.1.2:5900" : null, // default server URL
-    mainUrl: isDev ? "http://192.168.1.2:3000" : "https://g-seva.com",   // example main API URL
+    serverUrl: isDev ? "http://192.168.1.2:5900" : '', // default server URL
+    mainUrl: isDev ? "https://g-seva.com" : "https://g-seva.com",   // example main API URL
     apiKey: null,                          // optional API key or token
     isConnected: true,                     // network connection status
     timeout: 10000,                        // default timeout for requests
     isDev: isDev
-    // isDev: !isDev
 };
 
 const connectionSlice = createSlice({

@@ -1,7 +1,7 @@
-import Button from '@/components/custom/form/Button';
 import Input from '@/components/custom/form/Input';
 import ScreenWrapper from '@/components/custom/screens/ScreenWrapper';
 import { setServerUrl } from '@/redux/slices/connectionSlice';
+import { setGp } from '@/redux/slices/gpSlice';
 import { login } from '@/redux/slices/userSlice';
 import { setWebsites } from '@/redux/slices/websitesSlice';
 import { Feather } from '@expo/vector-icons';
@@ -19,19 +19,18 @@ const initialState = {
 };
 
 const LoginScreen = () => {
+    const { instance } = useApi()
+
     const router = useRouter();
     const [inputUser, setInputUser] = useState(initialState);
     const [showPassword, setShowPassword] = useState(false);
 
 
-    const { serverUrl } = useSelector(state => state.connection)
+    const { serverUrl, isDev } = useSelector(state => state.connection)
 
 
     const websites = useSelector(state => state.websites)
 
-    const connection = useSelector(state => state.connection)
-
-    const { instance } = useApi()
 
 
     const dispatch = useDispatch()
@@ -126,7 +125,14 @@ const LoginScreen = () => {
                             {websites?.length > 0 && (
                                 <Picker
                                     selectedValue={serverUrl}
-                                    onValueChange={(itemValue) => dispatch(setServerUrl(itemValue))}
+                                    onValueChange={(itemValue, itemIndex) => {
+                                        let selectIndex = isDev ? itemIndex - 2 : itemIndex - 1
+                                        dispatch(setGp({
+                                            grampanchayat_name: websites[selectIndex].grampanchayat_name
+                                        }))
+                                        dispatch(setServerUrl(itemValue))
+                                    }
+                                    }
                                     dropdownIconColor="#374151" // arrow color
                                     style={{ color: "#111827", backgroundColor: "white" }} // text color + bg
                                 >
@@ -137,12 +143,14 @@ const LoginScreen = () => {
                                         value=""
                                     />
 
-                                    {/* Local option for testing */}
-                                    <Picker.Item
-                                        key="local"
-                                        label="Local"
-                                        value="http://192.168.1.2:5900"
-                                    />
+                                    {
+                                        isDev &&
+                                        <Picker.Item
+                                            key="local"
+                                            label="Local"
+                                            value="http://192.168.1.2:5900"
+                                        />
+                                    }
 
                                     {/* Dynamic websites list */}
                                     {websites.map((web, idx) => (
@@ -157,7 +165,7 @@ const LoginScreen = () => {
 
                         </View>
 
-                       
+
                     </View>
 
                     {/* Button */}
