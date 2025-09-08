@@ -4,7 +4,7 @@ import { setServerUrl } from '@/redux/slices/connectionSlice';
 import { setGp } from '@/redux/slices/gpSlice';
 import { login } from '@/redux/slices/userSlice';
 import { setWebsites } from '@/redux/slices/websitesSlice';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -38,35 +38,32 @@ const LoginScreen = () => {
 
 
 
-    useEffect(() => {
+    const fetchWebsites = async () => {
+        try {
+            
+            let { success, data } = await instance.get('/websites')
 
-        const fetchWebsites = async () => {
-            try {
-
-                let { success, data } = await instance.get('/websites')
-
-                if (success) {
-                    dispatch(setWebsites(data.websites))
-                }
-            } catch (err) {
-                console.error(err)
+            if (success) {
+                dispatch(setWebsites(data.websites))
             }
+        } catch (err) {
+            console.error(err)
         }
-
-
+    }
+    useEffect(() => {
         fetchWebsites()
-
     }, [])
 
     const handleLogin = async () => {
+        try {
+            let { success, data } = await instance.post('/auth/login', inputUser)
 
-
-        let { success, data } = await instance.post('/auth/login', inputUser)
-
-
-        if (success) {
-            dispatch(login(data.user))
-            router.replace("/(tabs)")
+            if (success) {
+                dispatch(login(data.user))
+                router.replace("/(tabs)")
+            }
+        } catch (err) {
+            console.log(err)
         }
 
     };
@@ -163,9 +160,23 @@ const LoginScreen = () => {
                                 </Picker>
                             )}
 
+
+
+
                         </View>
 
 
+                        <View className='mt-2 flex items-end'>
+                            <Pressable
+                                onPress={fetchWebsites}
+                                className="bg-blue-600 px-4 py-2 rounded-md active:opacity-80 flex-row items-center self-start"
+                            >
+                                <MaterialIcons name="refresh" size={20} color="white" />
+                                <Text className="text-white text-base font-medium ml-2">
+                                    Refresh Site List
+                                </Text>
+                            </Pressable>
+                        </View>
                     </View>
 
                     {/* Button */}
