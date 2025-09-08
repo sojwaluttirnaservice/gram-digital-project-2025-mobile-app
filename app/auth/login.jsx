@@ -1,4 +1,5 @@
-import Label from '@/components/custom/form/Label';
+import Button from '@/components/custom/form/Button';
+import Input from '@/components/custom/form/Input';
 import ScreenWrapper from '@/components/custom/screens/ScreenWrapper';
 import { setServerUrl } from '@/redux/slices/connectionSlice';
 import { login } from '@/redux/slices/userSlice';
@@ -7,7 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useApi } from '../../hooks/custom/useApi';
 
@@ -79,31 +80,30 @@ const LoginScreen = () => {
                     Welcome Back
                 </Text>
 
-                
+
 
                 {/* Form */}
-                <View className="space-y-8">
+                <View className="flex-col gap-4">
                     {/* Username */}
                     <View>
-                        <Label>Username</Label>
-                        <TextInput
-                            placeholder="Enter your username"
+                        <Input
+                            label='Username'
                             value={inputUser.username}
+                            isLabelFloating
                             onChangeText={(text) => setInputUser({ ...inputUser, username: text })}
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 text-base"
                         />
                     </View>
 
                     {/* Password */}
                     <View>
-                        <Label>Password</Label>
-                        <TextInput
-                            placeholder="Enter your password"
-                            secureTextEntry={!showPassword}
+                        <Input
+                            label='Password'
                             value={inputUser.password}
-                            onChangeText={(text) => setInputUser({ ...inputUser, password: text })}
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 text-base"
+                            isLabelFloating
+                            secureTextEntry={!showPassword}
+                            onChangeText={(text) => setInputUser({ ...inputUser, username: text })}
                         />
+
                         <Pressable
                             onPress={() => setShowPassword(!showPassword)}
                             className="mt-2 self-end"
@@ -119,8 +119,6 @@ const LoginScreen = () => {
                         </Pressable>
                     </View>
 
-
-
                     {/* Village Name */}
                     <View>
                         <View className="border border-gray-300 rounded-lg overflow-hidden">
@@ -135,7 +133,7 @@ const LoginScreen = () => {
                                     {/* Default placeholder */}
                                     <Picker.Item
                                         key="placeholder"
-                                        label="-- Select --"
+                                        label="--Select--"
                                         value=""
                                     />
 
@@ -156,18 +154,25 @@ const LoginScreen = () => {
                                     ))}
                                 </Picker>
                             )}
+
                         </View>
+
+                       
                     </View>
 
                     {/* Button */}
 
                     <View className='mt-4'>
-                        <Pressable
+                        {/* <Pressable
                             onPress={handleLogin}
                             className="w-full bg-blue-600 rounded-xl py-4 items-center shadow-md active:opacity-80"
                         >
                             <Text className="text-white font-semibold text-lg">Login</Text>
-                        </Pressable>
+                        </Pressable> */}
+
+                        <Button variant='solid' size='sm' className='bg-red-500 px-4 py-2'>
+                            Login
+                        </Button>
                     </View>
                 </View>
             </View>
