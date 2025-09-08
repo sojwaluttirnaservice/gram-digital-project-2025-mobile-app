@@ -163,16 +163,16 @@ const LoginScreen = () => {
                     {/* Button */}
 
                     <View className='mt-4'>
-                        {/* <Pressable
+                        <Pressable
                             onPress={handleLogin}
                             className="w-full bg-blue-600 rounded-xl py-4 items-center shadow-md active:opacity-80"
                         >
                             <Text className="text-white font-semibold text-lg">Login</Text>
-                        </Pressable> */}
+                        </Pressable>
 
-                        <Button variant='solid' size='sm' className='bg-red-500 px-4 py-2'>
+                        {/* <Button variant='solid' size='sm' className='bg-red-500 px-4 py-2'>
                             Login
-                        </Button>
+                        </Button> */}
                     </View>
                 </View>
             </View>
