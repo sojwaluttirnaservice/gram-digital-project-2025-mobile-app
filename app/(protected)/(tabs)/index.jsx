@@ -1,4 +1,5 @@
 import Autocomplete from "@/components/custom/form/Autocomplete";
+import { TouchableOpacityButton } from "@/components/custom/form/Button";
 import FileInput from "@/components/custom/form/FileInput";
 import Label from "@/components/custom/form/Label";
 import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
@@ -7,6 +8,8 @@ import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
 import { useApi } from "@/hooks/custom/useApi";
 import useCompress from "@/hooks/custom/useCompress";
+import { openInGoogleMaps } from "@/hooks/utils/maps";
+import * as Location from 'expo-location';
 import { useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from "react-redux";
@@ -21,6 +24,8 @@ const HomeScreen = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
+    const [isUploadingImage, setIsUploadingImage] = useState(false)
+
 
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
@@ -33,12 +38,23 @@ const HomeScreen = () => {
     };
 
     const handleHomeImageUpload = async () => {
+
         if (!selectedHomeImage) {
             Alert.alert("Please select a file first");
             return;
         }
+
+        setIsUploadingImage(true)
         const compressed = await compressImage(selectedHomeImage.uri)
         const fileName = selectedHomeImage.name || 'upload.jpg';
+
+
+        let location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Highest,
+            maximumAge: 5000,                    // use cached result if less than 5s old
+            timeout: 15000                        // wait up to 15 seconds before failing
+        })
+
         const formData = new FormData();
         formData.append("homeImage", {
             uri: compressed.uri,
@@ -51,6 +67,32 @@ const HomeScreen = () => {
         formData.append('home_image_upload_person_user_id', user.id)
         formData.append('home_image_upload_person_username', user.username)
 
+        // Basic GPS fields
+        formData.append("home_image_latitude", location.coords.latitude);
+        formData.append("home_image_longitude", location.coords.longitude);
+
+        // Extra GPS metadata fields
+        formData.append("home_image_accuracy", location.coords.accuracy);
+        formData.append("home_image_altitude", location.coords.altitude);
+        formData.append("home_image_altitude_accuracy", location.coords.altitudeAccuracy);
+        formData.append("home_image_heading", location.coords.heading);
+        formData.append("home_image_speed", location.coords.speed);
+
+        const timestampUTC = new Date(location.timestamp);
+        const offsetIST = 5.5 * 60 * 60 * 1000; // +05:30 hours
+        const istTimestamp = new Date(timestampUTC.getTime() + offsetIST);
+
+        formData.append("home_image_timestamp", istTimestamp.toISOString().replace("Z", "+05:30"));
+
+        // Geometry field (WKT or GeoJSON string — backend will parse it)
+        formData.append(
+            "home_image_location",
+            JSON.stringify({
+                type: "Point",
+                coordinates: [location.coords.longitude, location.coords.latitude],
+            })
+        );
+
         try {
 
             let { success, message } = await api.put('/form-8/update-home-image', formData)
@@ -61,10 +103,22 @@ const HomeScreen = () => {
             }
         } catch (err) {
             console.error("Upload error:", err);
+            Alert.alert("Retry Again.")
+        } finally {
+            setIsUploadingImage(false)
         }
     };
 
-    // API search
+    /**
+     * Searches Malmatta Dharaks by Malmatta Number.
+     * Returns all dharaks whose number includes the entered digits.
+     *
+     * Example:
+     *   Input: "1" → Results: 1, 10, 11, 12 (if present)
+     *
+     * @param {string|number} malmattaNumber - The number typed in the search bar.
+     */
+
     const handleMalmattaDharakSearch = async (malmattaNumber) => {
         try {
 
@@ -81,6 +135,7 @@ const HomeScreen = () => {
 
         } catch (err) {
             console.error(err?.message);
+            Alert.alert('Try Again...')
         } finally {
             setIsLoading(false);
         }
@@ -99,9 +154,6 @@ const HomeScreen = () => {
     };
 
 
-    // useEffect(() =>{
-    //     console.log(selectedMalmattaDharak)
-    // }, [selectedMalmattaDharak])
 
     return (
         <ScreenWrapper>
@@ -207,6 +259,30 @@ const HomeScreen = () => {
                                                     <Label>शौच्छालय</Label>
                                                     <Text>{selectedMalmattaDharak.feu_havingToilet}</Text>
                                                 </View>
+
+                                            </View>
+                                            <View className="mt-2">
+                                                <TouchableOpacityButton
+                                                    color="#1E88E5"
+                                                    disabled={
+                                                        !(
+                                                            selectedMalmattaDharak?.home_image_latitude &&
+                                                            selectedMalmattaDharak?.home_image_longitude
+                                                        )
+                                                    }
+                                                    onPress={() =>
+                                                        openInGoogleMaps(
+                                                            selectedMalmattaDharak?.home_image_latitude,
+                                                            selectedMalmattaDharak?.home_image_longitude
+                                                        )
+                                                    }
+                                                >
+                                                    {selectedMalmattaDharak?.home_image_latitude &&
+                                                        selectedMalmattaDharak?.home_image_longitude
+                                                        ? "Open in Google Maps"
+                                                        : "No Associated Location Found"}
+                                                </TouchableOpacityButton>
+
                                             </View>
                                         </Card>
 
@@ -315,9 +391,10 @@ const HomeScreen = () => {
                                                     alignItems: "center",
                                                     marginTop: 10, // optional spacing
                                                 }}
+                                                disabled={isUploadingImage}
                                             >
                                                 <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
-                                                    Upload
+                                                    {isUploadingImage ? "Uploading..." : "Upload"}
                                                 </Text>
                                             </TouchableOpacity>
 

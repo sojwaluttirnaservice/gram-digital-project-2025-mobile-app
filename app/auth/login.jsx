@@ -6,9 +6,10 @@ import { login } from '@/redux/slices/userSlice';
 import { setWebsites } from '@/redux/slices/websitesSlice';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useApi } from '../../hooks/custom/useApi';
 
@@ -31,16 +32,41 @@ const LoginScreen = () => {
 
     const websites = useSelector(state => state.websites)
 
+    const [location, setLocation] = useState(null);
+
 
 
     const dispatch = useDispatch()
 
 
+    // FOR LOCATION ACCESS
+    useEffect(() => {
+
+        const getCurrentLocation = async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+
+            if (status !== 'granted') {
+                Alert.alert(
+                    "Location Required",
+                    "You must enable location access to use this app."
+                );
+                getCurrentLocation()
+                return;
+            }
+
+
+            let location = await Location.getCurrentPositionAsync({})
+            setLocation(location)
+        }
+
+        getCurrentLocation()
+
+    }, [])
 
 
     const fetchWebsites = async () => {
         try {
-            
+
             let { success, data } = await instance.get('/websites')
 
             if (success) {
@@ -169,7 +195,7 @@ const LoginScreen = () => {
                         <View className='mt-2 flex items-end'>
                             <Pressable
                                 onPress={fetchWebsites}
-                                className="bg-blue-600 px-4 py-2 rounded-md active:opacity-80 flex-row items-center self-start"
+                                className="bg-indigo-500 px-4 py-2 rounded-md active:opacity-80 flex-row items-center self-start"
                             >
                                 <MaterialIcons name="refresh" size={20} color="white" />
                                 <Text className="text-white text-base font-medium ml-2">
@@ -184,7 +210,7 @@ const LoginScreen = () => {
                     <View className='mt-4'>
                         <Pressable
                             onPress={handleLogin}
-                            className="w-full bg-blue-600 rounded-xl py-4 items-center shadow-md active:opacity-80"
+                            className="w-full bg-indigo-500 rounded-xl py-4 items-center shadow-md active:opacity-80"
                         >
                             <Text className="text-white font-semibold text-lg">Login</Text>
                         </Pressable>
