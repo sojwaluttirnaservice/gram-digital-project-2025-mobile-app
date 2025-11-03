@@ -41,7 +41,7 @@ const RootLayout = () => {
 
             <SafeAreaProvider>
                 <SafeAreaView
-                    style={{ flex: 1, background: "white" }}
+                    style={{ flex: 1, backgroundColor: "white" }}
                     edges={['top', 'left', 'right']}
                 >
                     {/* Screen Stacking */}
@@ -66,7 +66,7 @@ const RootLayout = () => {
                     </Stack>
 
                     {/* Status Bar */}
-                    <StatusBar style="auto" />
+                    <StatusBar style="dark" />
 
                 </SafeAreaView>
             </SafeAreaProvider>

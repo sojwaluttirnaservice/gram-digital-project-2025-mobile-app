@@ -1,5 +1,6 @@
 import Input from '@/components/custom/form/Input';
 import ScreenWrapper from '@/components/custom/screens/ScreenWrapper';
+import { app } from '@/data/app';
 import { setServerUrl } from '@/redux/slices/connectionSlice';
 import { setGp } from '@/redux/slices/gpSlice';
 import { login } from '@/redux/slices/userSlice';
@@ -99,7 +100,7 @@ const LoginScreen = () => {
             <View className="flex-1 justify-center px-6 bg-white">
                 {/* Title */}
                 <Text className="text-3xl font-bold mb-8 text-gray-800 text-center">
-                    Welcome Back
+                    Welcome To {app.name}
                 </Text>
 
 
