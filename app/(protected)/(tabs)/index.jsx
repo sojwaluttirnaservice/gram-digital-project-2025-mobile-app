@@ -11,7 +11,7 @@ import useCompress from "@/hooks/custom/useCompress";
 import { openInGoogleMaps } from "@/hooks/utils/maps";
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from "react-redux";
 
@@ -126,15 +126,15 @@ const HomeScreen = () => {
      * @param {string|number} malmattaNumber - The number typed in the search bar.
      */
 
-    const handleMalmattaDharakSearch = async (malmattaNumber) => {
+    const handleMalmattaDharakSearch = async (queryText) => {
         try {
 
-            setSearchText(malmattaNumber);
+            setSearchText(queryText);
             setIsLoading(true);
 
             // HERE, q = Query and sType = Search Type
             const { call: idLabelPairs } = await api.post('/get-user-info', {
-                q: malmattaNumber,
+                q: queryText,
                 sType: searchTypeOfUser
             });
 
@@ -159,6 +159,10 @@ const HomeScreen = () => {
         }
     };
 
+
+    useEffect(()=>{
+        handleMalmattaDharakSearch(searchText)
+    }, [searchTypeOfUser])
 
 
     return (
@@ -192,7 +196,7 @@ const HomeScreen = () => {
                             }}
                         >
                             <Picker.Item label="-- निवडा --" value="" />
-                            <Picker.Item label="भोगवतदाराचे नाव" value="1" />
+                            <Picker.Item label="मालमत्ताधारक नाव" value="1" />
                             <Picker.Item label="मालमत्ता क्रमांक" value="2" />
                             <Picker.Item label="भोगवटदाराचे नाव" value="3" />
                         </Picker>
