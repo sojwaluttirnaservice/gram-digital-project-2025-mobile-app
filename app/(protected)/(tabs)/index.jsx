@@ -2,31 +2,39 @@ import Autocomplete from "@/components/custom/form/Autocomplete";
 import { TouchableOpacityButton } from "@/components/custom/form/Button";
 import FileInput from "@/components/custom/form/FileInput";
 import Label from "@/components/custom/form/Label";
-import GpLayout from "@/components/custom/screens/GpLayout";
 import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
-import { H5 } from "@/components/custom/typography/Heading";
+import { H3, H5 } from "@/components/custom/typography/Heading";
 import Card from "@/components/custom/utils/Card";
 import ServerImage from "@/components/custom/utils/ServerImage";
 import { useApi } from "@/hooks/custom/useApi";
 import useCompress from "@/hooks/custom/useCompress";
 import { openInGoogleMaps } from "@/hooks/utils/maps";
+import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import { useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSelector } from "react-redux";
 
 const HomeScreen = () => {
+
+    const gp = useSelector(state => state.gp)
+
     // Utility
     const { api } = useApi()
     const { compressImage } = useCompress()
 
     // States
     const [searchText, setSearchText] = useState("");
+    // 1 => by मालमत्ता धारक नाव (feu_ownerName)
+    // 2 => by मालमत्ता क्रमांक (feu_malmattaNo)
+    // 3 => by भोगवटदार (feu_secondOwnerName)
+    // default => by id (Primary key)
+    const [searchTypeOfUser, setSearchTypeOfUser] = useState('2')
     const [isLoading, setIsLoading] = useState(false);
     const [idLabelPairs, setIdLabelPairs] = useState([]);
 
     const [isUploadingImage, setIsUploadingImage] = useState(false)
-    
+
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null)
     const [selectedHomeImage, setSelectedHomeImage] = useState(null)
 
@@ -127,7 +135,7 @@ const HomeScreen = () => {
             // HERE, q = Query and sType = Search Type
             const { call: idLabelPairs } = await api.post('/get-user-info', {
                 q: malmattaNumber,
-                sType: 2
+                sType: searchTypeOfUser
             });
 
             setIdLabelPairs(idLabelPairs || []);
@@ -155,14 +163,53 @@ const HomeScreen = () => {
 
     return (
         <ScreenWrapper>
-            <GpLayout>
+
+
+            <View className='sticky top-0 px-2 bg-white border-b-2 border-gray-400 py-2'>
+                <View className='bg-white border-b border-b-gray-300 pt-2 pb-4'>
+                    <View className="">
+                        <H3 className="text-2xl text-center text-indigo-600 font-extrabold tracking-wide">
+                            ग्रामपंचायत {gp?.grampanchayat_name || '-'}
+                        </H3>
+                    </View>
+                </View>
+
                 <Label className="text-lg text-center">मालमत्ता क्रमांक टाकून धारक शोधा.</Label>
+
+                <View className='mb-4'>
+                    <Text className='mb-2 font-bold'>
+                        शोधण्याचा निकष
+                    </Text>
+
+                    <View className="border border-[#1E88E5] rounded-lg bg-white overflow-hidden">
+                        <Picker
+                            selectedValue={searchTypeOfUser}
+                            onValueChange={(value) => setSearchTypeOfUser(value)}
+                            dropdownIconColor="#1E88E5"
+                            style={{
+                                color: "#111827", // Tailwind doesn't apply color to Picker text directly
+                                backgroundColor: "white",
+                            }}
+                        >
+                            <Picker.Item label="-- निवडा --" value="" />
+                            <Picker.Item label="भोगवतदाराचे नाव" value="1" />
+                            <Picker.Item label="मालमत्ता क्रमांक" value="2" />
+                            <Picker.Item label="भोगवटदाराचे नाव" value="3" />
+                        </Picker>
+                    </View>
+
+                    {/* <Text style={{ marginTop: 10, color: "#4B5563" }}>
+                        निवडलेला प्रकार: {searchTypeOfUser || "काहीही नाही"}
+                    </Text> */}
+                </View>
+
                 <Autocomplete
                     value={searchText}
                     onChange={handleMalmattaDharakSearch}
                     onSelect={(item) => handleSearchUser(item.id)}
                     data={idLabelPairs}
                     placeholder=""
+                    inputStyle={{ borderWidth: 2 }}
                     loading={isLoading}
                     listClass="rounded-sm"
                     getDisplayValue={(item) => item.label}
@@ -171,7 +218,12 @@ const HomeScreen = () => {
                             onPress={onSelect}
                             className="px-3 py-4 border-b border-gray-200"
                         >
-                            <Text className="font-semibold">{item.label}</Text>
+                            <Text className="text-blue-900 font-semibold text-base">
+                                मा. क्र. {item.feu_malmattaNo}
+                            </Text>
+                            <Text className="text-blue-700 mt-2 text-sm tracking-wide">
+                                मा. धारक: {item.feu_ownerName}
+                            </Text>
                         </TouchableOpacity>
                     )}
                     renderEmpty={() => (
@@ -180,239 +232,235 @@ const HomeScreen = () => {
                         </Text>
                     )}
                 />
+            </View>
 
-                <ScrollView>
-                    <H5 className="text-center">
-                        मालमत्ता धारकाची माहीती.
+            <ScrollView className="bg-gray-50">
+                <View className="px-4 py-5">
+                    <H5 className="text-center text-2xl font-semibold text-blue-800 mb-7 tracking-wide">
+                        मालमत्ता धारकाची माहीती
                     </H5>
 
-                    <View className="">
-                        <View>
-                            {
-                                selectedMalmattaDharak &&
-                                (
-                                    <>
+                    {selectedMalmattaDharak && (
+                        <View className="flex flex-col gap-7 pb-10">
 
-                                        <View className="flex flex-col gap-2">
-                                            {/* मालमत्ता माहिती */}
-                                            <Card className="p-3">
-                                                <Text className="font-bold text-lg text-yellow-700 mb-2">
-                                                    मालमत्ता माहिती
-                                                </Text>
-                                                <View className="flex-row justify-between">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>अनु क्रमांक</Label>
-                                                        <Text>{selectedMalmattaDharak.id}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>घर क्रमांक</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_homeNo}</Text>
-                                                    </View>
-                                                </View>
-                                                <View className="flex-row justify-between mt-2">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>मालमत्ता क्र.</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_malmattaNo}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>वार्ड नं</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_wardNo}</Text>
-                                                    </View>
-                                                </View>
-                                            </Card>
+                            {/* ---------------- मालमत्ता माहिती ---------------- */}
+                            <Card className="p-5 border border-gray-200 rounded-2xl bg-white shadow-md shadow-blue-50">
+                                <Text className="font-semibold text-lg text-blue-700 mb-4 border-b-2 border-blue-200 pb-2">
+                                    मालमत्ता माहिती
+                                </Text>
 
-                                            {/* मालकाची माहिती */}
-                                            <Card className="p-3">
-                                                <Text className="font-bold text-lg text-yellow-700 mb-2">
-                                                    मालकाची माहिती
-                                                </Text>
-                                                <View className="mb-2">
-                                                    <Label>मालमत्ता धारकाचे नाव</Label>
-                                                    <Text>{selectedMalmattaDharak.feu_ownerName}</Text>
-                                                </View>
-                                                <View className="mb-2">
-                                                    <Label>भोगवटदाराचे नाव</Label>
-                                                    <Text>{selectedMalmattaDharak.feu_secondOwnerName}</Text>
-                                                </View>
-                                                <View className="flex-row justify-between">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>मोबाईल क्रमांक</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_mobileNo}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>आधार क्रं.</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_aadharNo}</Text>
-                                                    </View>
-                                                </View>
-                                                <View className="flex-row justify-between mt-2">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>घरकुल योजना</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_gharkulYojna}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>शौच्छालय</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_havingToilet}</Text>
-                                                    </View>
-
-                                                </View>
-                                                <View className="mt-2">
-                                                    <TouchableOpacityButton
-                                                        color="#1E88E5"
-                                                        disabled={
-                                                            !(
-                                                                selectedMalmattaDharak?.home_image_latitude &&
-                                                                selectedMalmattaDharak?.home_image_longitude
-                                                            )
-                                                        }
-                                                        onPress={() =>
-                                                            openInGoogleMaps(
-                                                                selectedMalmattaDharak?.home_image_latitude,
-                                                                selectedMalmattaDharak?.home_image_longitude
-                                                            )
-                                                        }
-                                                    >
-                                                        {selectedMalmattaDharak?.home_image_latitude &&
-                                                            selectedMalmattaDharak?.home_image_longitude
-                                                            ? "Open in Google Maps"
-                                                            : "No Associated Location Found"}
-                                                    </TouchableOpacityButton>
-
-                                                </View>
-                                            </Card>
-
-                                            {/* जागेची माहिती */}
-                                            <Card className="p-3">
-                                                <Text className="font-bold text-lg text-yellow-700 mb-2">
-                                                    जागेची माहिती
-                                                </Text>
-                                                <Label>ग्रामपंचायत</Label>
-                                                <Text>{selectedMalmattaDharak.feu_gramPanchayet}</Text>
-                                                <Label className="mt-2">गावाचे नाव</Label>
-                                                <Text>{selectedMalmattaDharak.feu_villageName}</Text>
-                                            </Card>
-
-                                            {/* क्षेत्रफळ माहिती */}
-                                            <Card className="p-3">
-                                                <Text className="font-bold text-lg text-yellow-700 mb-2">
-                                                    क्षेत्रफळ माहिती
-                                                </Text>
-                                                <View className="flex-row justify-between">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>लांबी (फुट)</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_areaHeight}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>रुंदी (फुट)</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_areaWidth}</Text>
-                                                    </View>
-                                                </View>
-                                                <View className="flex-row justify-between mt-2">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>एकूण क्षेत्रफळ (फुट)</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_totalArea}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>एकूण क्षेत्रफळ (मी.)</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_totalAreaSquareMeter}</Text>
-                                                    </View>
-                                                </View>
-                                            </Card>
-
-                                            {/* दिशा माहिती */}
-                                            <Card className="p-3">
-                                                <Text className="font-bold text-lg text-yellow-700 mb-2">
-                                                    दिशा माहिती
-                                                </Text>
-                                                <View className="flex-row justify-between">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>पूर्वेस</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_eastLandmark || "-"}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>पश्चिमेस</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_westLandmark || "-"}</Text>
-                                                    </View>
-                                                </View>
-                                                <View className="flex-row justify-between mt-2">
-                                                    <View className="w-1/2 pr-2">
-                                                        <Label>उत्तरेस</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_northLandmark || "-"}</Text>
-                                                    </View>
-                                                    <View className="w-1/2">
-                                                        <Label>दक्षिणेस</Label>
-                                                        <Text>{selectedMalmattaDharak.feu_southLandmark || "-"}</Text>
-                                                    </View>
-                                                </View>
-                                                <View className="mt-2">
-                                                    <Label>बोजा/शेरा</Label>
-                                                    <Text>{selectedMalmattaDharak.feu_bojaShera || "-"}</Text>
-                                                </View>
-                                            </Card>
-
-                                            <Card>
-
-
-                                                <View>
-                                                    <Text>HomeImagePreview</Text>
-                                                    <ServerImage
-                                                        className='w-full h-52'
-                                                        imageClassName={'w-full h-full'}
-                                                        src={`/home_map_image/home_photo/${selectedMalmattaDharak.feu_image || `${selectedMalmattaDharak.feu_malmattaNo}.jpeg`}`}
-                                                        loading={'lazy'}
-                                                    />
-                                                </View>
-
-
-                                                <Label>Upload an home Image</Label>
-                                                <View>
-                                                    <FileInput
-                                                        onChange={handleFileChange}
-                                                    />
-                                                </View>
-                                            </Card>
-
-
-
-
-                                            <View>
-                                                <TouchableOpacity
-                                                    onPress={handleHomeImageUpload}
-                                                    style={{
-                                                        backgroundColor: "#1d4ed8",
-                                                        paddingVertical: 12,
-                                                        paddingHorizontal: 20,
-                                                        borderRadius: 8,
-                                                        alignItems: "center",
-                                                        marginTop: 10, // optional spacing
-                                                    }}
-                                                    disabled={isUploadingImage}
-                                                >
-                                                    <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
-                                                        {isUploadingImage ? "Uploading..." : "Upload"}
-                                                    </Text>
-                                                </TouchableOpacity>
-
-                                            </View>
-
-
-
-
+                                <View className="space-y-4">
+                                    <View className="flex-row justify-between border-b border-gray-200 pb-3">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>अनु क्रमांक</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.id}</Text>
                                         </View>
-                                    </>
-                                )
-                                // :
-                                // (
-                                //     <>
-                                //         <View>
-                                //             <Text>कोणताही संलग्न मालमत्ता धारक मिळाला नाही. </Text>
-                                //         </View>
-                                //     </>
-                                // )
-                            }
+                                        <View className="w-1/2">
+                                            <Label>घर क्रमांक</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_homeNo}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row justify-between">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>मालमत्ता क्र.</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_malmattaNo}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>वार्ड नं</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_wardNo}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Card>
+
+                            {/* ---------------- मालकाची माहिती ---------------- */}
+                            <Card className="p-5 border border-gray-200 rounded-2xl bg-white shadow-md shadow-blue-50">
+                                <Text className="font-semibold text-lg text-blue-700 mb-4 border-b-2 border-blue-200 pb-2">
+                                    मालकाची माहिती
+                                </Text>
+
+                                <View className="space-y-4">
+                                    <View className="border-b border-gray-200 pb-3">
+                                        <Label>मालमत्ता धारकाचे नाव</Label>
+                                        <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_ownerName}</Text>
+                                    </View>
+
+                                    <View className="border-b border-gray-200 pb-3">
+                                        <Label>भोगवटदाराचे नाव</Label>
+                                        <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_secondOwnerName}</Text>
+                                    </View>
+
+                                    <View className="flex-row justify-between border-b border-gray-200 pb-3">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>मोबाईल क्रमांक</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_mobileNo}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>आधार क्रं.</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_aadharNo}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row justify-between">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>घरकुल योजना</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_gharkulYojna}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>शौच्छालय</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_havingToilet}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View className="mt-5 pt-4 border-t border-gray-200">
+                                    <TouchableOpacityButton
+                                        color="#2563EB"
+                                        disabled={
+                                            !(
+                                                selectedMalmattaDharak?.home_image_latitude &&
+                                                selectedMalmattaDharak?.home_image_longitude
+                                            )
+                                        }
+                                        onPress={() =>
+                                            openInGoogleMaps(
+                                                selectedMalmattaDharak?.home_image_latitude,
+                                                selectedMalmattaDharak?.home_image_longitude
+                                            )
+                                        }
+                                    >
+                                        {selectedMalmattaDharak?.home_image_latitude &&
+                                            selectedMalmattaDharak?.home_image_longitude
+                                            ? "Open in Google Maps"
+                                            : "No Associated Location Found"}
+                                    </TouchableOpacityButton>
+                                </View>
+                            </Card>
+
+                            {/* ---------------- जागेची माहिती ---------------- */}
+                            <Card className="p-5 border border-gray-200 rounded-2xl bg-white shadow-md shadow-blue-50">
+                                <Text className="font-semibold text-lg text-blue-700 mb-4 border-b-2 border-blue-200 pb-2">
+                                    जागेची माहिती
+                                </Text>
+                                <View className="space-y-4">
+                                    <View className="border-b border-gray-200 pb-3">
+                                        <Label>ग्रामपंचायत</Label>
+                                        <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_gramPanchayet}</Text>
+                                    </View>
+                                    <View>
+                                        <Label>गावाचे नाव</Label>
+                                        <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_villageName}</Text>
+                                    </View>
+                                </View>
+                            </Card>
+
+                            {/* ---------------- क्षेत्रफळ माहिती ---------------- */}
+                            <Card className="p-5 border border-gray-200 rounded-2xl bg-white shadow-md shadow-blue-50">
+                                <Text className="font-semibold text-lg text-blue-700 mb-4 border-b-2 border-blue-200 pb-2">
+                                    क्षेत्रफळ माहिती
+                                </Text>
+                                <View className="space-y-4">
+                                    <View className="flex-row justify-between border-b border-gray-200 pb-3">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>लांबी (फुट)</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_areaHeight}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>रुंदी (फुट)</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_areaWidth}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row justify-between">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>एकूण क्षेत्रफळ (फुट)</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_totalArea}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>एकूण क्षेत्रफळ (मी.)</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_totalAreaSquareMeter}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Card>
+
+                            {/* ---------------- दिशा माहिती ---------------- */}
+                            <Card className="p-5 border border-gray-200 rounded-2xl bg-white shadow-md shadow-blue-50">
+                                <Text className="font-semibold text-lg text-blue-700 mb-4 border-b-2 border-blue-200 pb-2">
+                                    दिशा माहिती
+                                </Text>
+
+                                <View className="space-y-4">
+                                    <View className="flex-row justify-between border-b border-gray-200 pb-3">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>पूर्वेस</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_eastLandmark || "-"}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>पश्चिमेस</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_westLandmark || "-"}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row justify-between border-b border-gray-200 pb-3">
+                                        <View className="w-1/2 pr-3">
+                                            <Label>उत्तरेस</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_northLandmark || "-"}</Text>
+                                        </View>
+                                        <View className="w-1/2">
+                                            <Label>दक्षिणेस</Label>
+                                            <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_southLandmark || "-"}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View>
+                                        <Label>बोजा/शेरा</Label>
+                                        <Text className="text-gray-900 mt-1">{selectedMalmattaDharak.feu_bojaShera || "-"}</Text>
+                                    </View>
+                                </View>
+                            </Card>
+
+                            {/* ---------------- घराचा फोटो ---------------- */}
+                            <Card className="p-5 border border-gray-200 rounded-2xl bg-white shadow-md shadow-blue-50">
+                                <Text className="font-semibold text-lg text-blue-700 mb-4 border-b-2 border-blue-200 pb-2">
+                                    घराचा फोटो
+                                </Text>
+
+                                <View className="mb-4 border border-gray-200 rounded-xl overflow-hidden">
+                                    <ServerImage
+                                        className="w-full h-52"
+                                        imageClassName="w-full h-full"
+                                        src={`/home_map_image/home_photo/${selectedMalmattaDharak.feu_image || `${selectedMalmattaDharak.feu_malmattaNo}.jpeg`}`}
+                                        loading="lazy"
+                                    />
+                                </View>
+
+                                <Label className="mb-2 text-gray-700">Upload a Home Image</Label>
+                                <FileInput onChange={handleFileChange} />
+
+                                <TouchableOpacity
+                                    onPress={handleHomeImageUpload}
+                                    style={{
+                                        backgroundColor: "#2563EB",
+                                        paddingVertical: 13,
+                                        borderRadius: 10,
+                                        alignItems: "center",
+                                        marginTop: 12,
+                                    }}
+                                    disabled={isUploadingImage}
+                                >
+                                    <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+                                        {isUploadingImage ? "Uploading..." : "Upload"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </Card>
                         </View>
-                    </View>
-                </ScrollView>
-            </GpLayout>
+                    )}
+                </View>
+            </ScrollView>
+
+
         </ScreenWrapper>
     );
 };
