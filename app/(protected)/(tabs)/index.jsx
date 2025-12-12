@@ -156,6 +156,8 @@ const HomeScreen = () => {
 
         } catch (err) {
             console.log(err)
+            // Alert.alert('error first', err)
+            // Alert.alert('err second', err.message)
         }
     };
 
