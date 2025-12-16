@@ -42,27 +42,24 @@ const LoginScreen = () => {
 
     // FOR LOCATION ACCESS
     useEffect(() => {
-
         const getCurrentLocation = async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
 
             if (status !== 'granted') {
                 Alert.alert(
                     "Location Required",
-                    "You must enable location access to use this app."
+                    "You must enable location access to use this app from Settings."
                 );
-                getCurrentLocation()
-                return;
+                return; // ❌ stop here
             }
 
+            let location = await Location.getCurrentPositionAsync({});
+            setLocation(location);
+        };
 
-            let location = await Location.getCurrentPositionAsync({})
-            setLocation(location)
-        }
+        getCurrentLocation();
+    }, []);
 
-        getCurrentLocation()
-
-    }, [])
 
 
     const fetchWebsites = async () => {

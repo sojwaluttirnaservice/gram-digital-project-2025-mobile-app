@@ -163,7 +163,8 @@ const HomeScreen = () => {
 
 
     useEffect(()=>{
-        handleMalmattaDharakSearch(searchText)
+        if(searchText)
+            handleMalmattaDharakSearch(searchText)
     }, [searchTypeOfUser])
 
 

@@ -1,11 +1,7 @@
 import { HttpClient } from "@/classes/HttpClient";
 import { client } from "@/classes/HttpProvider";
 import { useMemo } from "react";
-import { Alert } from "react-native";
 import { useSelector } from "react-redux";
-
-// ---- Timeout (easy to modify) ----
-const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 // ---- Redux State Shape ----
 interface ConnectionState {
@@ -67,62 +63,40 @@ export function useApi(): {
     (state: RootState) => state.connection
   );
 
-  // ---- Interceptors ----
-
-  // Unwrap response data
-  const unwrapInterceptor = (data: any) => data;
-
-  // Adds timeout to request
-  const timeoutRequestInterceptor = async (url: string, config: any) => {
-    const controller = new AbortController();
-
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-    config.signal = controller.signal;
-    config._timeoutCleanup = () => clearTimeout(timer);
-
-    return { url, config };
+  /**
+   * Shared response interceptor
+   * - Returns raw `data` as-is, without wrapping in extra structure
+   */
+  const unwrapInterceptor = (data: any) => {
+    return data;
   };
 
-  // Clears timeout timer
-  const timeoutCleanupInterceptor = (data: any, response: any) => {
-    if (response?.config?._timeoutCleanup) {
-      response.config._timeoutCleanup();
-    }
-  };
+  // Client bound to dynamic serverUrl
+  const api = useMemo<HttpClient | null>(() => {
+    if (!serverUrl) return null;
+    const _client = client.create("gramDigital", { baseURL: serverUrl });
 
-  // Handle timeout error
-  const timeoutErrorInterceptor = (data: any, response: any) => {
-    if (response?.name === "AbortError") {
-      Alert.alert(
-        "Timeout Error",
-        "The request took too long. Please try again."
-      );
-    }
-  };
-
-  // ---- Create API Clients ----
-
-  const setupClient = (key: string, url: string | null) => {
-    if (!url) return null;
-
-    const _client = client.create(key, { baseURL: url });
-
+    // Ensure interceptor is added only once
     if (!(_client as any)._hasInterceptor) {
-      // Add interceptors exactly once
-      _client.useRequestInterceptor(timeoutRequestInterceptor);
-      _client.useResponseInterceptor(timeoutCleanupInterceptor);
-      _client.useResponseInterceptor(timeoutErrorInterceptor);
       _client.useResponseInterceptor(unwrapInterceptor);
-
       (_client as any)._hasInterceptor = true;
     }
 
     return _client;
-  };
+  }, [serverUrl]);
 
-  const api = useMemo(() => setupClient("gramDigital", serverUrl), [serverUrl]);
-  const instance = useMemo(() => setupClient("gSeva", mainUrl), [mainUrl]);
+  // Client bound to mainUrl
+  const instance = useMemo<HttpClient | null>(() => {
+    if (!mainUrl) return null;
+    const _client = client.create("gSeva", { baseURL: mainUrl });
+
+    if (!(_client as any)._hasInterceptor) {
+      _client.useResponseInterceptor(unwrapInterceptor);
+      (_client as any)._hasInterceptor = true;
+    }
+
+    return _client;
+  }, [mainUrl]);
 
   return { api, instance };
 }
