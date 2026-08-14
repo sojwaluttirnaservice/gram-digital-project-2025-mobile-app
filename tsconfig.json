@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+, "app/(protected)/+not-found.jsx", "app/(protected)/_layout.jsx", "app/(protected)/(tabs)/index.jsx", "app/(protected)/(tabs)/explore.jsx", "app/(protected)/(tabs)/_layout.jsx"  ]
+}

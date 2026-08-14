@@ -1,0 +1,59 @@
+/*
+===========================================================
+🧩 SafeAreaView
+-----------------------------------------------------------
+To change the background color of the safe area, wrap your
+screen with a SafeAreaView and apply a background color
+using the 'style' prop.
+
+The 'edges' prop defines which sides respect the safe area
+insets (from react-native-safe-area-context).
+===========================================================
+*/
+
+<SafeAreaView
+  style={{ flex: 1, backgroundColor: 'white' }}
+  edges={['top', 'left', 'right']}
+>
+  {/* Screen content here */}
+</SafeAreaView>
+
+/*
+===========================================================
+🌈 StatusBar
+-----------------------------------------------------------
+To change the color of the status bar icons:
+
+- Use `style="dark"` for dark icons (light backgrounds)
+- Use `style="light"` for light icons (dark backgrounds)
+===========================================================
+*/
+
+// For Expo projects
+import { StatusBar } from 'expo-status-bar';
+<StatusBar style="dark" />;
+
+// For React Native CLI projects
+import { StatusBar } from 'react-native';
+<StatusBar barStyle="dark-content" />;
+
+/*
+===========================================================
+✅ Example: Combined usage
+===========================================================
+*/
+
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+
+export default function ExampleScreen() {
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: 'white' }}
+      edges={['top', 'left', 'right']}
+    >
+      <StatusBar style="dark" />
+      {/* Your screen content */}
+    </SafeAreaView>
+  );
+}
