@@ -12,20 +12,17 @@ import { createSlice } from "@reduxjs/toolkit";
 
 /** @type {ConnectionState} */
 
+const PROJECT_MODE = process.env.EXPO_PUBLIC_PROJECT_ENV;
 
-
-const PROJECT_MODE = process.env.EXPO_PUBLIC_PROJECT_ENV
-
-
-let isDev = PROJECT_MODE !== "PROD"
+let isDev = PROJECT_MODE !== "PROD";
 
 const initialState = {
-    serverUrl: isDev ? "http://192.168.1.2:5900" : '', // default server URL
-    mainUrl: isDev ? "https://g-seva.com" : "https://g-seva.com",   // example main API URL
-    apiKey: null,                          // optional API key or token
-    isConnected: true,                     // network connection status
-    timeout: 10000,                        // default timeout for requests
-    isDev: isDev
+    serverUrl: isDev ? "http://192.168.1.2:5900" : "", // default server URL
+    mainUrl: isDev ? "https://g-seva.com" : "https://g-seva.com", // example main API URL
+    apiKey: null, // optional API key or token
+    isConnected: true, // network connection status
+    timeout: 10000, // default timeout for requests
+    isDev: isDev,
 };
 
 const connectionSlice = createSlice({
@@ -79,16 +76,8 @@ const connectionSlice = createSlice({
     },
 });
 
-export const {
-    setServerUrl,
-    setMainUrl,
-    setApiKey,
-    setIsConnected,
-    setTimeout,
-} = connectionSlice.actions;
+export const { setServerUrl, setMainUrl, setApiKey, setIsConnected, setTimeout } = connectionSlice.actions;
 
-
-const connectionReducer = connectionSlice.reducer
+const connectionReducer = connectionSlice.reducer;
 
 export { connectionReducer };
-

@@ -10,7 +10,7 @@ const store = configureStore({
         connection: connectionReducer,
         user: userReducer,
         websites: websitesReducer,
-        gp: gpReducer
+        gp: gpReducer,
         // add more slices here if needed
     },
 });

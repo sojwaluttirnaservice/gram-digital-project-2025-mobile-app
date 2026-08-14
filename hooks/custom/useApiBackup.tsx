@@ -5,12 +5,12 @@ import { useSelector } from "react-redux";
 
 // ---- Redux State Shape ----
 interface ConnectionState {
-  serverUrl: string | null;
-  mainUrl: string | null;
+    serverUrl: string | null;
+    mainUrl: string | null;
 }
 
 interface RootState {
-  connection: ConnectionState;
+    connection: ConnectionState;
 }
 
 // ---- Hook ----
@@ -56,47 +56,45 @@ interface RootState {
  * - `instance`: HttpClient bound to `mainUrl` (`gSeva`)
  */
 export function useApi(): {
-  api: HttpClient | null;
-  instance: HttpClient | null;
+    api: HttpClient | null;
+    instance: HttpClient | null;
 } {
-  const { serverUrl, mainUrl } = useSelector(
-    (state: RootState) => state.connection
-  );
+    const { serverUrl, mainUrl } = useSelector((state: RootState) => state.connection);
 
-  /**
-   * Shared response interceptor
-   * - Returns raw `data` as-is, without wrapping in extra structure
-   */
-  const unwrapInterceptor = (data: any) => {
-    return data;
-  };
+    /**
+     * Shared response interceptor
+     * - Returns raw `data` as-is, without wrapping in extra structure
+     */
+    const unwrapInterceptor = (data: any) => {
+        return data;
+    };
 
-  // Client bound to dynamic serverUrl
-  const api = useMemo<HttpClient | null>(() => {
-    if (!serverUrl) return null;
-    const _client = client.create("gramDigital", { baseURL: serverUrl });
+    // Client bound to dynamic serverUrl
+    const api = useMemo<HttpClient | null>(() => {
+        if (!serverUrl) return null;
+        const _client = client.create("gramDigital", { baseURL: serverUrl });
 
-    // Ensure interceptor is added only once
-    if (!(_client as any)._hasInterceptor) {
-      _client.useResponseInterceptor(unwrapInterceptor);
-      (_client as any)._hasInterceptor = true;
-    }
+        // Ensure interceptor is added only once
+        if (!(_client as any)._hasInterceptor) {
+            _client.useResponseInterceptor(unwrapInterceptor);
+            (_client as any)._hasInterceptor = true;
+        }
 
-    return _client;
-  }, [serverUrl]);
+        return _client;
+    }, [serverUrl]);
 
-  // Client bound to mainUrl
-  const instance = useMemo<HttpClient | null>(() => {
-    if (!mainUrl) return null;
-    const _client = client.create("gSeva", { baseURL: mainUrl });
+    // Client bound to mainUrl
+    const instance = useMemo<HttpClient | null>(() => {
+        if (!mainUrl) return null;
+        const _client = client.create("gSeva", { baseURL: mainUrl });
 
-    if (!(_client as any)._hasInterceptor) {
-      _client.useResponseInterceptor(unwrapInterceptor);
-      (_client as any)._hasInterceptor = true;
-    }
+        if (!(_client as any)._hasInterceptor) {
+            _client.useResponseInterceptor(unwrapInterceptor);
+            (_client as any)._hasInterceptor = true;
+        }
 
-    return _client;
-  }, [mainUrl]);
+        return _client;
+    }, [mainUrl]);
 
-  return { api, instance };
+    return { api, instance };
 }

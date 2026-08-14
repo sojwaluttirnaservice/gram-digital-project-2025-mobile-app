@@ -15,91 +15,87 @@ import { HttpError } from "./HttpError";
  * @property {Record<string, string>} [headers] - Default headers
  */
 class HttpClient {
-  /**
-   * @param {HttpClientConfig} config
-   */
-  constructor(config = {}) {
-    this.baseURL = config.baseURL || "";
-    this.defaultHeaders = config.headers || {
-      "Content-Type": "application/json",
-    };
+    /**
+     * @param {HttpClientConfig} config
+     */
+    constructor(config = {}) {
+        this.baseURL = config.baseURL || "";
+        this.defaultHeaders = config.headers || {
+            "Content-Type": "application/json",
+        };
 
-    this.requestInterceptors = [];
-    this.responseInterceptors = [];
-  }
-
-  useRequestInterceptor(interceptor) {
-    this.requestInterceptors.push(interceptor);
-  }
-
-  useResponseInterceptor(interceptor) {
-    this.responseInterceptors.push(interceptor);
-  }
-
-  /**
-   * Auto-detects headers based on body type
-   */
-  _getHeaders(headers, body) {
-    let computed = { ...this.defaultHeaders, ...headers };
-
-    if (body instanceof FormData) {
-      // Let fetch set boundary automatically
-      delete computed["Content-Type"];
-    } else if (
-      typeof body === "object" &&
-      body !== null &&
-      !(body instanceof Blob)
-    ) {
-      computed["Content-Type"] = "application/json";
+        this.requestInterceptors = [];
+        this.responseInterceptors = [];
     }
 
-    return computed;
-  }
-
-  async request(method, url, body = null, headers = {}) {
-    let fullUrl = this.baseURL + url;
-    let config = { method, headers: this._getHeaders(headers, body) };
-
-    if (body) {
-      if (body instanceof FormData) {
-        config.body = body;
-      } else if (typeof body === "object" && !(body instanceof Blob)) {
-        config.body = JSON.stringify(body);
-      } else {
-        config.body = body;
-      }
+    useRequestInterceptor(interceptor) {
+        this.requestInterceptors.push(interceptor);
     }
 
-    // Apply request interceptors
-    for (const interceptor of this.requestInterceptors) {
-      const modified = await interceptor(fullUrl, config);
-      if (modified) {
-        fullUrl = modified.url || fullUrl;
-        config = modified.config || config;
-      }
+    useResponseInterceptor(interceptor) {
+        this.responseInterceptors.push(interceptor);
     }
 
-    try {
-      const response = await fetch(fullUrl, config);
-      let resData = null;
+    /**
+     * Auto-detects headers based on body type
+     */
+    _getHeaders(headers, body) {
+        let computed = { ...this.defaultHeaders, ...headers };
 
-      try {
-        resData = await response.json();
-      } catch (_) {
-        // ignore non-JSON responses (plain text, empty body, etc.)
-      }
+        if (body instanceof FormData) {
+            // Let fetch set boundary automatically
+            delete computed["Content-Type"];
+        } else if (typeof body === "object" && body !== null && !(body instanceof Blob)) {
+            computed["Content-Type"] = "application/json";
+        }
 
-      // Apply response interceptors
-      for (const interceptor of this.responseInterceptors) {
-        resData = (await interceptor(resData, response)) || resData;
-      }
+        return computed;
+    }
 
-      // Always trust real HTTP status
-      const statusCode = response.status;
+    async request(method, url, body = null, headers = {}) {
+        let fullUrl = this.baseURL + url;
+        let config = { method, headers: this._getHeaders(headers, body) };
 
-      return resData;
+        if (body) {
+            if (body instanceof FormData) {
+                config.body = body;
+            } else if (typeof body === "object" && !(body instanceof Blob)) {
+                config.body = JSON.stringify(body);
+            } else {
+                config.body = body;
+            }
+        }
 
-      /*
+        // Apply request interceptors
+        for (const interceptor of this.requestInterceptors) {
+            const modified = await interceptor(fullUrl, config);
+            if (modified) {
+                fullUrl = modified.url || fullUrl;
+                config = modified.config || config;
+            }
+        }
+
+        try {
+            const response = await fetch(fullUrl, config);
+            let resData = null;
+
+            try {
+                resData = await response.json();
+            } catch (_) {
+                // ignore non-JSON responses (plain text, empty body, etc.)
+            }
+
+            // Apply response interceptors
+            for (const interceptor of this.responseInterceptors) {
+                resData = (await interceptor(resData, response)) || resData;
+            }
+
+            // Always trust real HTTP status
+            const statusCode = response.status;
+
+            return resData;
+
+            /*
       if (!response.ok || statusCode >= 400) {
         throw new HttpError(
           resData?.usrMsg || response.statusText || "Something went wrong",
@@ -111,7 +107,7 @@ class HttpClient {
       }
     */
 
-      /*
+            /*
       return {
         success: true,
         data: resData?.data ?? resData,
@@ -120,38 +116,37 @@ class HttpClient {
         usrMsg: resData?.usrMsg || null,
       };
       */
-    } catch (err) {
-      if (err instanceof HttpError) throw err;
+        } catch (err) {
+            if (err instanceof HttpError) throw err;
 
-      throw new HttpError(
-        "Please check your internet connection",
-        0,
-        "Please check your internet connection",
-        err.message || "Unknown error"
-      );
+            throw new HttpError(
+                "Please check your internet connection",
+                0,
+                "Please check your internet connection",
+                err.message || "Unknown error",
+            );
+        }
     }
-  }
 
-  get(url, headers = {}) {
-    return this.request("GET", url, null, headers);
-  }
+    get(url, headers = {}) {
+        return this.request("GET", url, null, headers);
+    }
 
-  post(url, body = {}, headers = {}) {
-    return this.request("POST", url, body, headers);
-  }
+    post(url, body = {}, headers = {}) {
+        return this.request("POST", url, body, headers);
+    }
 
-  put(url, body = {}, headers = {}) {
-    return this.request("PUT", url, body, headers);
-  }
+    put(url, body = {}, headers = {}) {
+        return this.request("PUT", url, body, headers);
+    }
 
-  patch(url, body = {}, headers = {}) {
-    return this.request("PATCH", url, body, headers);
-  }
+    patch(url, body = {}, headers = {}) {
+        return this.request("PATCH", url, body, headers);
+    }
 
-  delete(url, headers = {}) {
-    return this.request("DELETE", url, null, headers);
-  }
+    delete(url, headers = {}) {
+        return this.request("DELETE", url, null, headers);
+    }
 }
 
 export { HttpClient };
-

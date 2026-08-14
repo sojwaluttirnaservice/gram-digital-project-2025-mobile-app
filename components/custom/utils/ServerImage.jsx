@@ -97,24 +97,15 @@ const ServerImage = ({
 
     // resolved values from props (do NOT mutate these when a load error occurs)
     const resolvedPrimary = useMemo(() => resolveSource(src, serverUrl), [src, serverUrl]);
-    const resolvedPlaceholder = useMemo(
-        () => resolveSource(placeholder ?? null, serverUrl),
-        [placeholder, serverUrl]
-    );
-    const resolvedFallbackProp = useMemo(() => resolveSource(fallback ?? null, serverUrl), [
-        fallback,
-        serverUrl,
-    ]);
-    const resolvedDefaultFallback = useMemo(
-        () => resolveSource(noImageFoundFallbackImage, serverUrl),
-        [serverUrl]
-    );
+    const resolvedPlaceholder = useMemo(() => resolveSource(placeholder ?? null, serverUrl), [placeholder, serverUrl]);
+    const resolvedFallbackProp = useMemo(() => resolveSource(fallback ?? null, serverUrl), [fallback, serverUrl]);
+    const resolvedDefaultFallback = useMemo(() => resolveSource(noImageFoundFallbackImage, serverUrl), [serverUrl]);
 
     // internal state: `activeSource` is what we pass to expo-image.
     // Unlike earlier versions, once we switch to a fallback due to an error,
     // we *do not* override it until `src` actually changes (avoids override loops).
     const [activeSource, setActiveSource] = useState(
-        resolvedPrimary ?? resolvedPlaceholder ?? resolvedFallbackProp ?? resolvedDefaultFallback
+        resolvedPrimary ?? resolvedPlaceholder ?? resolvedFallbackProp ?? resolvedDefaultFallback,
     );
     const [isLoading, setIsLoading] = useState(true);
     const [erroredForSrc, setErroredForSrc] = useState(null); // record which primary src errored
@@ -158,9 +149,7 @@ const ServerImage = ({
 
     return (
         <View className={containerClass} style={[styles.container, containerStyle]}>
-            {isLoading && (
-                <ActivityIndicator style={StyleSheet.absoluteFill} size="small" color="#999" />
-            )}
+            {isLoading && <ActivityIndicator style={StyleSheet.absoluteFill} size="small" color="#999" />}
 
             <Image
                 // expo-image accepts string | number | { uri }

@@ -50,11 +50,7 @@ const websitesSlice = createSlice({
     },
 });
 
-export const {
-    setWebsites,
-    addWebsite,
-    clearWebsites,
-} = websitesSlice.actions;
+export const { setWebsites, addWebsite, clearWebsites } = websitesSlice.actions;
 
 const websitesReducer = websitesSlice.reducer;
 

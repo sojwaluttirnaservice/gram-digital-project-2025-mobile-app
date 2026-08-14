@@ -42,10 +42,7 @@ const Label = ({
             <Text
                 accessibilityLabel={accessibilityLabel}
                 accessibilityHint={accessibilityDescribedBy}
-                className={twMerge(
-                    "text-sm font-bold text-gray-800 tracking-wide mb-1",
-                    className
-                )}
+                className={twMerge("text-sm font-bold text-gray-800 tracking-wide mb-1", className)}
                 {...rest}
             >
                 {children}

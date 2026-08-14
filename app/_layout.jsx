@@ -1,16 +1,14 @@
-import "../global.css"
+import "../global.css";
 
-import React from 'react'
+import React from "react";
 // import { useFonts } from 'expo-font';
 // import { useColorScheme } from '@/hooks/useColorScheme';
 
-
-import store from "@/redux/store/store"
-import { Stack } from 'expo-router'
-import { StatusBar } from "expo-status-bar"
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context"
-import { Provider } from "react-redux"
-
+import store from "@/redux/store/store";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Provider } from "react-redux";
 
 /**
     This Rootlayout is created because to smooth the auth flow
@@ -22,8 +20,6 @@ import { Provider } from "react-redux"
     Reference Video Link: https://www.youtube.com/watch?v=yNaOaR2kIa0
  */
 const RootLayout = () => {
-
-
     //  const colorScheme = useColorScheme();
     // const [loaded] = useFonts({
     //     SpaceMono: require('../../assets/fonts/SpaceMono-Regular.ttf'),
@@ -34,16 +30,10 @@ const RootLayout = () => {
     //     return null;
     // }
     return (
-
-
         // Redux store provider
         <Provider store={store}>
-
             <SafeAreaProvider>
-                <SafeAreaView
-                    style={{ flex: 1, backgroundColor: "white" }}
-                    edges={['top', 'left', 'right']}
-                >
+                <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} edges={["top", "left", "right"]}>
                     {/* Screen Stacking */}
                     <Stack>
                         {/* First Screen */}
@@ -51,7 +41,7 @@ const RootLayout = () => {
                             name="(protected)"
                             options={{
                                 headerShown: false,
-                                animation: 'none'
+                                animation: "none",
                             }}
                         />
 
@@ -60,19 +50,17 @@ const RootLayout = () => {
                             name="auth"
                             options={{
                                 headerShown: false,
-                                animation: 'none'
+                                animation: "none",
                             }}
                         />
                     </Stack>
 
                     {/* Status Bar */}
                     <StatusBar style="dark" />
-
                 </SafeAreaView>
             </SafeAreaProvider>
         </Provider>
+    );
+};
 
-    )
-}
-
-export default RootLayout
+export default RootLayout;

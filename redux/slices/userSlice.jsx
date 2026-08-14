@@ -1,7 +1,6 @@
 // store/userSlice.js
 import { createSlice } from "@reduxjs/toolkit";
 
-
 /**
  * @typedef {Object} UserState
  * @property {string} id
@@ -33,7 +32,7 @@ const userSlice = createSlice({
             state.id = id;
             state.username = username;
             state.name = name;
-            state.token = 'dummyToken' || token;
+            state.token = "dummyToken" || token;
             state.isAuthenticated = true;
         },
 
@@ -42,10 +41,10 @@ const userSlice = createSlice({
          * @param {UserState} state
          */
         logout: (state) => {
-            state.id = '';
-            state.username = '';
-            state.name = '';
-            state.token = '';
+            state.id = "";
+            state.username = "";
+            state.name = "";
+            state.token = "";
             state.isAuthenticated = false;
         },
     },
@@ -56,4 +55,3 @@ export const { login, logout } = userSlice.actions;
 const userReducer = userSlice.reducer;
 
 export { userReducer };
-

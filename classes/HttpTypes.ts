@@ -1,23 +1,23 @@
 export interface RequestInit {
-  method?: string;
-  headers?: Record<string, string>;
-  body?: any;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: any;
 }
 /**
  * Configuration for HttpClient
  */
 export interface HttpClientConfig {
-  baseURL?: string;
-  headers?: Record<string, string>;
+    baseURL?: string;
+    headers?: Record<string, string>;
 }
 
 /**
  * Shape of the response returned by HttpClient
  */
 export interface HttpResponse<T = any> {
-  status: number;
-  data: T;
-  raw: Response;
+    status: number;
+    data: T;
+    raw: Response;
 }
 
 /**
@@ -26,12 +26,9 @@ export interface HttpResponse<T = any> {
  * - May be sync or async.
  */
 export type RequestInterceptor = (
-  url: string,
-  config: RequestInit
-) =>
-  | { url?: string; config?: RequestInit }
-  | void
-  | Promise<{ url?: string; config?: RequestInit } | void>;
+    url: string,
+    config: RequestInit,
+) => { url?: string; config?: RequestInit } | void | Promise<{ url?: string; config?: RequestInit } | void>;
 
 /**
  * Response interceptor type
@@ -39,7 +36,4 @@ export type RequestInterceptor = (
  * - Returns a (possibly) transformed data value
  * - May be sync or async
  */
-export type ResponseInterceptor = (
-  data: any,
-  response: Response
-) => any | Promise<any>;
+export type ResponseInterceptor = (data: any, response: Response) => any | Promise<any>;

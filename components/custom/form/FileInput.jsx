@@ -4,12 +4,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
-import React, {
-    useCallback,
-    useImperativeHandle,
-    useMemo,
-    useState
-} from "react";
+import React, { useCallback, useImperativeHandle, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -77,7 +72,7 @@ const FileInput = React.forwardRef((props, ref) => {
             onPick?.(f);
             onChange?.(f);
         },
-        [onPick, onChange, value]
+        [onPick, onChange, value],
     );
 
     // Try to pick the best media constant to avoid deprecation warnings across expo versions.
@@ -85,7 +80,8 @@ const FileInput = React.forwardRef((props, ref) => {
         // prefer new API if available
         if (ImagePicker?.MediaType && ImagePicker.MediaType.Images) return ImagePicker.MediaType.Images;
         // fallback to older constant, if present
-        if (ImagePicker?.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images) return ImagePicker.MediaTypeOptions.Images;
+        if (ImagePicker?.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images)
+            return ImagePicker.MediaTypeOptions.Images;
         // last resort: undefined (library will fallback)
         return undefined;
     }, []);
@@ -301,7 +297,7 @@ const FileInput = React.forwardRef((props, ref) => {
             getBase64,
             openExternally,
         }),
-        [file, getBase64, openExternally, emitPick, value]
+        [file, getBase64, openExternally, emitPick, value],
     );
 
     // UI helpers
@@ -342,11 +338,7 @@ const FileInput = React.forwardRef((props, ref) => {
 
                 {/* Remove button OUTSIDE Pressable */}
                 {file && allowRemove && !loading ? (
-                    <TouchableOpacity
-                        onPress={removeFile}
-                        style={styles.removeBtn}
-                        accessibilityLabel="Remove file"
-                    >
+                    <TouchableOpacity onPress={removeFile} style={styles.removeBtn} accessibilityLabel="Remove file">
                         <Ionicons name="close" size={14} color="#fff" />
                     </TouchableOpacity>
                 ) : null}
@@ -377,15 +369,17 @@ const FileInput = React.forwardRef((props, ref) => {
                         </TouchableOpacity>
                     )}
 
-                    <TouchableOpacity style={[styles.modalItem, { borderTopWidth: 1, borderTopColor: "#eee" }]} onPress={() => setModalOpen(false)}>
+                    <TouchableOpacity
+                        style={[styles.modalItem, { borderTopWidth: 1, borderTopColor: "#eee" }]}
+                        onPress={() => setModalOpen(false)}
+                    >
                         <Text style={[styles.modalText, { color: "#ef4444" }]}>Cancel</Text>
                     </TouchableOpacity>
                 </View>
             </Modal>
         </View>
     );
-}
-);
+});
 
 // Fix ESLint react/display-name for forwardRef
 FileInput.displayName = "FileInput";

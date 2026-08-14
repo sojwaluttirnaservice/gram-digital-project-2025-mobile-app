@@ -96,9 +96,8 @@ const Autocomplete = ({
             onChange(text);
             if (!fromSelect) setShowList(true); // open only when user types
         },
-        [onChange]
+        [onChange],
     );
-
 
     /** Handle selecting an item */
     const handleSelect = useCallback(
@@ -113,16 +112,13 @@ const Autocomplete = ({
                 Keyboard.dismiss();
             }
         },
-        [fillInputOnSelect, closeOnSelect, handleChange, getDisplayValue, onSelect]
+        [fillInputOnSelect, closeOnSelect, handleChange, getDisplayValue, onSelect],
     );
 
     /** Default item renderer — always accept { item, onSelect } */
     const defaultRenderItem = ({ item, onSelect }) => (
         <TouchableOpacity
-            className={clsx(
-                "p-3 border-b border-gray-200 bg-white active:bg-gray-100",
-                itemClass
-            )}
+            className={clsx("p-3 border-b border-gray-200 bg-white active:bg-gray-100", itemClass)}
             style={itemStyle}
             onPress={onSelect}
         >
@@ -137,10 +133,7 @@ const Autocomplete = ({
             placeholder={props.placeholder}
             value={props.value ?? ""}
             onChangeText={props.onChangeText}
-            className={clsx(
-                "border border-gray-300 rounded-xl p-3 text-base bg-white",
-                inputClass
-            )}
+            className={clsx("border border-gray-300 rounded-xl p-3 text-base bg-white", inputClass)}
             style={inputStyle}
         />
     );
@@ -169,15 +162,15 @@ const Autocomplete = ({
             {/* Input */}
             {renderInput
                 ? renderInput({
-                    placeholder,
-                    value,
-                    onChangeText: handleChange,
-                })
+                      placeholder,
+                      value,
+                      onChangeText: handleChange,
+                  })
                 : defaultRenderInput({
-                    placeholder,
-                    value,
-                    onChangeText: handleChange,
-                })}
+                      placeholder,
+                      value,
+                      onChangeText: handleChange,
+                  })}
 
             {/* Loading indicator */}
             {loading && (
@@ -192,7 +185,7 @@ const Autocomplete = ({
                 <View
                     className={clsx(
                         "absolute top-full left-0 right-0 z-50 border border-gray-300 rounded-xl mt-1 bg-white",
-                        listClass
+                        listClass,
                     )}
                     style={[{ maxHeight: maxDropdownHeight }, listStyle]}
                 >
@@ -203,17 +196,23 @@ const Autocomplete = ({
                             keyExtractor={(_, index) => index.toString()}
                             renderItem={({ item, index }) =>
                                 renderItem
-                                    ? renderItem({ item, index, onSelect: () => handleSelect(item) })
-                                    : defaultRenderItem({ item, index, onSelect: () => handleSelect(item) })
+                                    ? renderItem({
+                                          item,
+                                          index,
+                                          onSelect: () => handleSelect(item),
+                                      })
+                                    : defaultRenderItem({
+                                          item,
+                                          index,
+                                          onSelect: () => handleSelect(item),
+                                      })
                             }
-                            keyboardShouldPersistTaps="always"   // ensure taps register with keyboard open
-                            nestedScrollEnabled                   // allow scroll within scroll
+                            keyboardShouldPersistTaps="always" // ensure taps register with keyboard open
+                            nestedScrollEnabled // allow scroll within scroll
                             showsVerticalScrollIndicator
                         />
                     ) : (
-                        renderEmpty?.() ?? (
-                            <Text className="p-3 text-gray-400 text-sm">No results found</Text>
-                        )
+                        (renderEmpty?.() ?? <Text className="p-3 text-gray-400 text-sm">No results found</Text>)
                     )}
                 </View>
             )}

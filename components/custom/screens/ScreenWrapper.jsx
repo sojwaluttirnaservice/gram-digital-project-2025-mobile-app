@@ -1,15 +1,7 @@
 // components/ScreenWrapper.js
 
 import React from "react";
-import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleProp,
-    View,
-    ViewStyle,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StatusBar, StyleProp, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
@@ -37,16 +29,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  * @param {React.ReactNode} props.children - Screen content.
  * @param {StyleProp<ViewStyle>} [props.style] - Styles applied to the container (ScrollView or View).
  * @param {StyleProp<ViewStyle>} [props.contentContainerStyle] - Inner content style (only applies if scroll is true).
- * @param {number} [props.keyboardOffset] - Manually override the keyboard offset.  
+ * @param {number} [props.keyboardOffset] - Manually override the keyboard offset.
  *                                          Defaults to `safeArea.top + 64` on iOS, `StatusBar.currentHeight || 0` on Android.
  */
-const ScreenWrapper = ({
-    children,
-    scroll = false,
-    style,
-    contentContainerStyle,
-    keyboardOffset,
-}) => {
+const ScreenWrapper = ({ children, scroll = false, style, contentContainerStyle, keyboardOffset }) => {
     const insets = useSafeAreaInsets();
 
     // Calculate dynamic keyboard offset
@@ -54,8 +40,8 @@ const ScreenWrapper = ({
         keyboardOffset !== undefined
             ? keyboardOffset
             : Platform.OS === "ios"
-                ? insets.top + 64 // Adjust header height here if needed
-                : StatusBar.currentHeight || 0;
+              ? insets.top + 64 // Adjust header height here if needed
+              : StatusBar.currentHeight || 0;
 
     return (
         <KeyboardAvoidingView
@@ -66,10 +52,7 @@ const ScreenWrapper = ({
             {scroll ? (
                 <ScrollView
                     style={[{ flex: 1 }, style]}
-                    contentContainerStyle={[
-                        { flexGrow: 1, paddingHorizontal: 8 },
-                        contentContainerStyle,
-                    ]}
+                    contentContainerStyle={[{ flexGrow: 1, paddingHorizontal: 8 }, contentContainerStyle]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                     className="bg-white"
@@ -77,7 +60,9 @@ const ScreenWrapper = ({
                     {children}
                 </ScrollView>
             ) : (
-                <View style={[{ flex: 1 }, style]} className="bg-white">{children}</View>
+                <View style={[{ flex: 1 }, style]} className="bg-white">
+                    {children}
+                </View>
             )}
         </KeyboardAvoidingView>
     );

@@ -1,6 +1,3 @@
-import noImageFoundFallbackImage from "../../assets/custom/images/fallbacks/noImageAvailable.png"
+import noImageFoundFallbackImage from "../../assets/custom/images/fallbacks/noImageAvailable.png";
 
-
-export {
-    noImageFoundFallbackImage
-}
+export { noImageFoundFallbackImage };

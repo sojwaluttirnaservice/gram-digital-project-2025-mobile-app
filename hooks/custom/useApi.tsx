@@ -9,12 +9,12 @@ const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 // ---- Redux State Shape ----
 interface ConnectionState {
-  serverUrl: string | null;
-  mainUrl: string | null;
+    serverUrl: string | null;
+    mainUrl: string | null;
 }
 
 interface RootState {
-  connection: ConnectionState;
+    connection: ConnectionState;
 }
 
 // ---- Hook ----
@@ -60,69 +60,64 @@ interface RootState {
  * - `instance`: HttpClient bound to `mainUrl` (`gSeva`)
  */
 export function useApi(): {
-  api: HttpClient | null;
-  instance: HttpClient | null;
+    api: HttpClient | null;
+    instance: HttpClient | null;
 } {
-  const { serverUrl, mainUrl } = useSelector(
-    (state: RootState) => state.connection
-  );
+    const { serverUrl, mainUrl } = useSelector((state: RootState) => state.connection);
 
-  // ---- Interceptors ----
+    // ---- Interceptors ----
 
-  // Unwrap response data
-  const unwrapInterceptor = (data: any) => data;
+    // Unwrap response data
+    const unwrapInterceptor = (data: any) => data;
 
-  // Adds timeout to request
-  const timeoutRequestInterceptor = async (url: string, config: any) => {
-    const controller = new AbortController();
+    // Adds timeout to request
+    const timeoutRequestInterceptor = async (url: string, config: any) => {
+        const controller = new AbortController();
 
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-    config.signal = controller.signal;
-    config._timeoutCleanup = () => clearTimeout(timer);
+        config.signal = controller.signal;
+        config._timeoutCleanup = () => clearTimeout(timer);
 
-    return { url, config };
-  };
+        return { url, config };
+    };
 
-  // Clears timeout timer
-  const timeoutCleanupInterceptor = (data: any, response: any) => {
-    if (response?.config?._timeoutCleanup) {
-      response.config._timeoutCleanup();
-    }
-  };
+    // Clears timeout timer
+    const timeoutCleanupInterceptor = (data: any, response: any) => {
+        if (response?.config?._timeoutCleanup) {
+            response.config._timeoutCleanup();
+        }
+    };
 
-  // Handle timeout error
-  const timeoutErrorInterceptor = (data: any, response: any) => {
-    if (response?.name === "AbortError") {
-      Alert.alert(
-        "Timeout Error",
-        "The request took too long. Please try again."
-      );
-    }
-  };
+    // Handle timeout error
+    const timeoutErrorInterceptor = (data: any, response: any) => {
+        if (response?.name === "AbortError") {
+            Alert.alert("Timeout Error", "The request took too long. Please try again.");
+        }
+    };
 
-  // ---- Create API Clients ----
+    // ---- Create API Clients ----
 
-  const setupClient = (key: string, url: string | null) => {
-    if (!url) return null;
+    const setupClient = (key: string, url: string | null) => {
+        if (!url) return null;
 
-    const _client = client.create(key, { baseURL: url });
+        const _client = client.create(key, { baseURL: url });
 
-    if (!(_client as any)._hasInterceptor) {
-      // Add interceptors exactly once
-      _client.useRequestInterceptor(timeoutRequestInterceptor);
-      _client.useResponseInterceptor(timeoutCleanupInterceptor);
-      _client.useResponseInterceptor(timeoutErrorInterceptor);
-      _client.useResponseInterceptor(unwrapInterceptor);
+        if (!(_client as any)._hasInterceptor) {
+            // Add interceptors exactly once
+            _client.useRequestInterceptor(timeoutRequestInterceptor);
+            _client.useResponseInterceptor(timeoutCleanupInterceptor);
+            _client.useResponseInterceptor(timeoutErrorInterceptor);
+            _client.useResponseInterceptor(unwrapInterceptor);
 
-      (_client as any)._hasInterceptor = true;
-    }
+            (_client as any)._hasInterceptor = true;
+        }
 
-    return _client;
-  };
+        return _client;
+    };
 
-  const api = useMemo(() => setupClient("gramDigital", serverUrl), [serverUrl]);
-  const instance = useMemo(() => setupClient("gSeva", mainUrl), [mainUrl]);
+    const api = useMemo(() => setupClient("gramDigital", serverUrl), [serverUrl]);
+    const instance = useMemo(() => setupClient("gSeva", mainUrl), [mainUrl]);
 
-  return { api, instance };
+    return { api, instance };
 }
