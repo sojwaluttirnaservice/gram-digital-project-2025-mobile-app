@@ -13,6 +13,9 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { useApi } from "../../hooks/custom/useApi";
+import { getErrorMessage } from "@/utils/errorUtils";
+import OfflineDownloadModal from "@/components/custom/utils/OfflineDownloadModal";
+import { setIsConnected } from "@/redux/slices/connectionSlice";
 
 const initialState = {
     id: "",
@@ -21,11 +24,13 @@ const initialState = {
 };
 
 const LoginScreen = () => {
-    const { instance } = useApi();
+    const { instance, api } = useApi();
 
     const router = useRouter();
     const [inputUser, setInputUser] = useState(initialState);
     const [showPassword, setShowPassword] = useState(false);
+    const [selectedMode, setSelectedMode] = useState("online");
+    const [showOfflineModal, setShowOfflineModal] = useState(false);
 
     const { serverUrl, isDev } = useSelector((state) => state.connection);
 
@@ -73,10 +78,18 @@ const LoginScreen = () => {
 
             if (success) {
                 dispatch(login(data.user));
-                router.replace("/(tabs)");
+                
+                if (selectedMode === "offline") {
+                    dispatch(setIsConnected(false));
+                    setShowOfflineModal(true);
+                } else {
+                    dispatch(setIsConnected(true));
+                    router.replace("/(tabs)");
+                }
             }
         } catch (err) {
             console.log(err);
+            Alert.alert("Login Error", getErrorMessage(err, "An error occurred during login."));
         }
     };
 
@@ -105,7 +118,7 @@ const LoginScreen = () => {
                             value={inputUser.password}
                             isLabelFloating
                             secureTextEntry={!showPassword}
-                            onChangeText={(text) => setInputUser({ ...inputUser, username: text })}
+                            onChangeText={(text) => setInputUser({ ...inputUser, password: text })}
                         />
 
                         <Pressable onPress={() => setShowPassword(!showPassword)} className="mt-2 self-end">
@@ -164,6 +177,27 @@ const LoginScreen = () => {
                         </View>
                     </View>
 
+                    {/* Mode Selector */}
+                    <View className="flex-row justify-between mt-2">
+                        <Pressable 
+                            onPress={() => setSelectedMode("online")}
+                            className={`flex-1 py-3 mr-2 rounded-xl border ${selectedMode === "online" ? "bg-indigo-50 border-indigo-500" : "bg-white border-gray-300"}`}
+                        >
+                            <Text className={`text-center font-bold ${selectedMode === "online" ? "text-indigo-600" : "text-gray-500"}`}>
+                                🌐 Online
+                            </Text>
+                        </Pressable>
+
+                        <Pressable 
+                            onPress={() => setSelectedMode("offline")}
+                            className={`flex-1 py-3 ml-2 rounded-xl border ${selectedMode === "offline" ? "bg-indigo-50 border-indigo-500" : "bg-white border-gray-300"}`}
+                        >
+                            <Text className={`text-center font-bold ${selectedMode === "offline" ? "text-indigo-600" : "text-gray-500"}`}>
+                                📵 Offline
+                            </Text>
+                        </Pressable>
+                    </View>
+
                     {/* Button */}
 
                     <View className="mt-4">
@@ -180,6 +214,19 @@ const LoginScreen = () => {
                     </View>
                 </View>
             </View>
+            <OfflineDownloadModal 
+                isVisible={showOfflineModal}
+                serverUrl={serverUrl}
+                apiInstance={api}
+                onComplete={() => {
+                    setShowOfflineModal(false);
+                    router.replace("/(tabs)");
+                }}
+                onCancel={() => {
+                    setShowOfflineModal(false);
+                    router.replace("/(tabs)");
+                }}
+            />
         </ScreenWrapper>
     );
 };

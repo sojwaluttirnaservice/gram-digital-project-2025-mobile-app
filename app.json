@@ -42,7 +42,8 @@
                 {
                     "locationAlwaysAndWhenInUsePermission": "Allow G-SEVA to use your location."
                 }
-            ]
+            ],
+            "expo-sqlite"
         ],
         "experiments": {
             "typedRoutes": true

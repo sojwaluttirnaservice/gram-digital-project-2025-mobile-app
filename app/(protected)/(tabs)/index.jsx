@@ -9,7 +9,10 @@ import ServerImage from "@/components/custom/utils/ServerImage";
 import { useApi } from "@/hooks/custom/useApi";
 import useCompress from "@/hooks/custom/useCompress";
 import { openInGoogleMaps } from "@/hooks/utils/maps";
+import { dbService } from "@/services/db";
+import { syncOfflineData } from "@/services/sync";
 import { Picker } from "@react-native-picker/picker";
+import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -17,10 +20,14 @@ import { useSelector } from "react-redux";
 
 const HomeScreen = () => {
     const gp = useSelector((state) => state.gp);
+    const user = useSelector((state) => state.user);
+    const isConnected = useSelector((state) => state.connection.isConnected);
+    const serverUrl = useSelector((state) => state.connection.serverUrl);
 
     // Utility
     const { api } = useApi();
     const { compressImage } = useCompress();
+    const router = useRouter();
 
     // States
     const [searchText, setSearchText] = useState("");
@@ -37,7 +44,25 @@ const HomeScreen = () => {
     const [selectedMalmattaDharak, setSelectedMalmattaDharak] = useState(null);
     const [selectedHomeImage, setSelectedHomeImage] = useState(null);
 
-    const user = useSelector((state) => state.user);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const updatePendingCount = async () => {
+        try {
+            const count = await dbService.getPendingUploadsCount();
+            setPendingCount(count);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // 1. Initial pending count
+    useEffect(() => {
+        updatePendingCount();
+    }, []);
+
+    // Note: Auto-sync on connection has been removed.
+    // The user must explicitly press the "Sync" button in the UI to give permission.
 
     const handleFileChange = (file) => {
         setSelectedHomeImage(file); // { uri, name, size, mimeType, kind }
@@ -50,59 +75,96 @@ const HomeScreen = () => {
         }
 
         setIsUploadingImage(true);
-        const compressed = await compressImage(selectedHomeImage.uri);
-        const fileName = selectedHomeImage.name || "upload.jpg";
+        try {
+            const compressed = await compressImage(selectedHomeImage.uri);
+            const fileName = selectedHomeImage.name || "upload.jpg";
 
-        let location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Highest,
-            maximumAge: 5000, // use cached result if less than 5s old
-            timeout: 15000, // wait up to 15 seconds before failing
-        });
+            let location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Highest,
+                maximumAge: 5000, // use cached result if less than 5s old
+                timeout: 15000, // wait up to 15 seconds before failing
+            });
 
-        const formData = new FormData();
-        formData.append("homeImage", {
-            uri: compressed.uri,
-            name: fileName || "upload.jpg",
-            type: selectedHomeImage.mimeType || "application/octet-stream",
-        });
-
-        formData.append("id", selectedMalmattaDharak.id);
-        formData.append("malmatta_number", selectedMalmattaDharak.feu_malmattaNo);
-        formData.append("home_image_upload_person_user_id", user.id);
-        formData.append("home_image_upload_person_username", user.username);
-
-        // Basic GPS fields
-        formData.append("home_image_latitude", location.coords.latitude);
-        formData.append("home_image_longitude", location.coords.longitude);
-
-        // Extra GPS metadata fields
-        formData.append("home_image_accuracy", location.coords.accuracy);
-        formData.append("home_image_altitude", location.coords.altitude);
-        formData.append("home_image_altitude_accuracy", location.coords.altitudeAccuracy);
-        formData.append("home_image_heading", location.coords.heading);
-        formData.append("home_image_speed", location.coords.speed);
-
-        const timestampUTC = new Date(location.timestamp);
-        const offsetIST = 5.5 * 60 * 60 * 1000; // +05:30 hours
-        const istTimestamp = new Date(timestampUTC.getTime() + offsetIST);
-
-        formData.append("home_image_timestamp", istTimestamp.toISOString().replace("Z", "+05:30"));
-
-        // Geometry field (WKT or GeoJSON string — backend will parse it)
-        formData.append(
-            "home_image_location",
-            JSON.stringify({
+            const timestampUTC = new Date(location.timestamp);
+            const offsetIST = 5.5 * 60 * 60 * 1000; // +05:30 hours
+            const istTimestamp = new Date(timestampUTC.getTime() + offsetIST);
+            const timestampStr = istTimestamp.toISOString().replace("Z", "+05:30");
+            const locationGeoJson = JSON.stringify({
                 type: "Point",
                 coordinates: [location.coords.longitude, location.coords.latitude],
-            }),
-        );
+            });
 
-        try {
-            let { success, message } = await api.put("/form-8/update-home-image", formData);
+            const uploadPayload = {
+                malmatta_number: selectedMalmattaDharak.feu_malmattaNo,
+                user_id: user.id,
+                username: user.username,
+                local_image_uri: compressed.uri,
+                mime_type: selectedHomeImage.mimeType || "image/jpeg",
+                file_name: fileName,
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                accuracy: location.coords.accuracy,
+                altitude: location.coords.altitude,
+                altitude_accuracy: location.coords.altitudeAccuracy,
+                heading: location.coords.heading,
+                speed: location.coords.speed,
+                timestamp: timestampStr,
+                location_geojson: locationGeoJson,
+            };
 
-            if (success) {
-                Alert.alert(message);
-                handleSearchUser(selectedMalmattaDharak.id);
+            if (isConnected) {
+                const formData = new FormData();
+                formData.append("homeImage", {
+                    uri: compressed.uri,
+                    name: fileName || "upload.jpg",
+                    type: selectedHomeImage.mimeType || "application/octet-stream",
+                });
+
+                formData.append("id", selectedMalmattaDharak.id);
+                formData.append("malmatta_number", selectedMalmattaDharak.feu_malmattaNo);
+                formData.append("home_image_upload_person_user_id", user.id);
+                formData.append("home_image_upload_person_username", user.username);
+
+                // Basic GPS fields
+                formData.append("home_image_latitude", location.coords.latitude);
+                formData.append("home_image_longitude", location.coords.longitude);
+
+                // Extra GPS metadata fields
+                formData.append("home_image_accuracy", location.coords.accuracy);
+                formData.append("home_image_altitude", location.coords.altitude);
+                formData.append("home_image_altitude_accuracy", location.coords.altitudeAccuracy);
+                formData.append("home_image_heading", location.coords.heading);
+                formData.append("home_image_speed", location.coords.speed);
+                formData.append("home_image_timestamp", timestampStr);
+
+                // Geometry field (WKT or GeoJSON string — backend will parse it)
+                formData.append("home_image_location", locationGeoJson);
+
+                let { success, message } = await api.put("/form-8/update-home-image", formData);
+
+                if (success) {
+                    Alert.alert("Success", message || "Image uploaded successfully!");
+                    handleSearchUser(selectedMalmattaDharak.id);
+                } else {
+                    Alert.alert("Upload Failed", message || "There was an error uploading the image.");
+                }
+            } else {
+                // Offline -> Queue up locally using serverUrl
+                await dbService.queueOfflineUpload(serverUrl, selectedMalmattaDharak.id, uploadPayload);
+                Alert.alert(
+                    "ऑफलाईन सेव्ह केले",
+                    "फोटो मोबाईलमध्ये सेव्ह झाला आहे. इंटरनेट आल्यावर तो आपोआप अपलोड होईल.",
+                );
+
+                // Update active state so it shows preview immediately
+                setSelectedMalmattaDharak((prev) => ({
+                    ...prev,
+                    local_image_uri: compressed.uri,
+                    home_image_latitude: location.coords.latitude,
+                    home_image_longitude: location.coords.longitude,
+                }));
+                setSelectedHomeImage(null);
+                updatePendingCount();
             }
         } catch (err) {
             console.error("Upload error:", err);
@@ -121,19 +183,29 @@ const HomeScreen = () => {
      *
      * @param {string|number} malmattaNumber - The number typed in the search bar.
      */
-
     const handleMalmattaDharakSearch = async (queryText) => {
         try {
             setSearchText(queryText);
             setIsLoading(true);
 
-            // HERE, q = Query and sType = Search Type
-            const { call: idLabelPairs } = await api.post("/get-user-info", {
-                q: queryText,
-                sType: searchTypeOfUser,
-            });
+            if (!queryText) {
+                setIdLabelPairs([]);
+                return;
+            }
 
-            setIdLabelPairs(idLabelPairs || []);
+            if (isConnected) {
+                // HERE, q = Query and sType = Search Type
+                const { call: idLabelPairs } = await api.post("/get-user-info", {
+                    q: queryText,
+                    sType: searchTypeOfUser,
+                });
+                // console.log(idLabelPairs)
+                setIdLabelPairs(idLabelPairs || []);
+            } else {
+                // Offline search SQLite (scoped to active serverUrl)
+                const results = await dbService.searchLocalDharaks(serverUrl, queryText, searchTypeOfUser);
+                setIdLabelPairs(results);
+            }
         } catch (err) {
             console.error(err?.message);
         } finally {
@@ -143,14 +215,29 @@ const HomeScreen = () => {
 
     const handleSearchUser = async (f8UserId) => {
         try {
-            const { data: malmattaDharakDetails } = await api.post("/form-8/getSingleUserDetails", { id: f8UserId });
+            if (isConnected) {
+                const { data: malmattaDharakDetails } = await api.post("/form-8/getSingleUserDetails", {
+                    id: f8UserId,
+                });
+                setSelectedMalmattaDharak(malmattaDharakDetails);
+                setSelectedHomeImage(null);
 
-            setSelectedMalmattaDharak(malmattaDharakDetails);
-            setSelectedHomeImage(null);
+                // Cache locally under the current server URL context
+                if (serverUrl && malmattaDharakDetails) {
+                    await dbService.cacheDharak(serverUrl, malmattaDharakDetails);
+                }
+            } else {
+                // Fetch from Local SQLite
+                const localDetails = await dbService.getLocalDharakDetails(f8UserId);
+                if (localDetails) {
+                    setSelectedMalmattaDharak(localDetails);
+                } else {
+                    Alert.alert("माहिती उपलब्ध नाही", "ही मालमत्ता स्थानिक डेटाबेसमध्ये उपलब्ध नाही.");
+                }
+                setSelectedHomeImage(null);
+            }
         } catch (err) {
             console.log(err);
-            // Alert.alert('error first', err)
-            // Alert.alert('err second', err.message)
         }
     };
 
@@ -160,64 +247,97 @@ const HomeScreen = () => {
 
     return (
         <ScreenWrapper>
-            <View className="sticky top-0 px-2 bg-white border-b-2 border-gray-400 py-2">
-                <View className="bg-white border-b border-b-gray-300 pt-2 pb-4">
-                    <View className="">
-                        <H3 className="text-2xl text-center text-indigo-600 font-extrabold tracking-wide">
-                            ग्रामपंचायत {gp?.grampanchayat_name || "-"}
-                        </H3>
-                    </View>
-                </View>
-
-                <Label className="text-lg text-center">मालमत्ता क्रमांक टाकून धारक शोधा.</Label>
-
-                <View className="mb-4">
-                    <Text className="mb-2 font-bold">शोधण्याचा निकष</Text>
-
-                    <View className="border border-[#1E88E5] rounded-lg bg-white overflow-hidden">
-                        <Picker
-                            selectedValue={searchTypeOfUser}
-                            onValueChange={(value) => setSearchTypeOfUser(value)}
-                            dropdownIconColor="#1E88E5"
-                            style={{
-                                color: "#111827", // Tailwind doesn't apply color to Picker text directly
-                                backgroundColor: "white",
-                            }}
-                        >
-                            <Picker.Item label="-- निवडा --" value="" />
-                            <Picker.Item label="मालमत्ताधारक नाव" value="1" />
-                            <Picker.Item label="मालमत्ता क्रमांक" value="2" />
-                            <Picker.Item label="भोगवटदाराचे नाव" value="3" />
-                        </Picker>
-                    </View>
-
-                    {/* <Text style={{ marginTop: 10, color: "#4B5563" }}>
-                        निवडलेला प्रकार: {searchTypeOfUser || "काहीही नाही"}
-                    </Text> */}
-                </View>
-
-                <Autocomplete
-                    value={searchText}
-                    onChange={handleMalmattaDharakSearch}
-                    onSelect={(item) => handleSearchUser(item.id)}
-                    data={idLabelPairs}
-                    placeholder=""
-                    inputStyle={{ borderWidth: 2 }}
-                    loading={isLoading}
-                    listClass="rounded-sm"
-                    getDisplayValue={(item) => item.label}
-                    renderItem={({ item, onSelect }) => (
-                        <TouchableOpacity onPress={onSelect} className="px-3 py-4 border-b border-gray-200">
-                            <Text className="text-blue-900 font-semibold text-base">
-                                मा. क्र. {item.feu_malmattaNo}
+            <View className="sticky top-0 bg-white border-b-2 border-gray-400">
+                {/* Offline status banner */}
+                {!isConnected && (
+                    <TouchableOpacity onPress={() => router.push('/queue')} className="bg-amber-100 border-b border-amber-300 px-4 py-2 flex-row items-center justify-between">
+                        <Text className="text-amber-800 font-semibold text-sm">
+                            ⚠️ ऑफलाईन मोड (तुमची माहिती मोबाईलमध्ये सेव्ह होईल)
+                        </Text>
+                        {pendingCount > 0 && (
+                            <Text className="text-amber-900 bg-amber-200 px-2 py-0.5 rounded text-xs font-bold">
+                                {pendingCount} प्रलंबित (View)
                             </Text>
-                            <Text className="text-blue-700 mt-2 text-sm tracking-wide">
-                                मा. धारक: {item.feu_ownerName}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                    renderEmpty={() => <Text className="p-3 text-gray-400">No matching मालमत्ता धारक found</Text>}
-                />
+                        )}
+                    </TouchableOpacity>
+                )}
+                {isConnected && pendingCount > 0 && (
+                    <TouchableOpacity onPress={() => router.push('/queue')} className="bg-indigo-50 border-b border-indigo-200 px-4 py-2 flex-row items-center justify-between">
+                        <Text className="text-indigo-800 font-semibold text-xs flex-1">
+                            🔄{" "}
+                            {isSyncing ? "माहिती अपलोड होत आहे..." : "अपलोड बाकी आहे (View Queue)"}
+                        </Text>
+                        {!isSyncing && (
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setIsSyncing(true);
+                                    await syncOfflineData(() => updatePendingCount());
+                                    setIsSyncing(false);
+                                    updatePendingCount();
+                                }}
+                                className="bg-indigo-600 px-3 py-1 rounded-md ml-2"
+                            >
+                                <Text className="text-white text-xs font-bold">Sync {pendingCount}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </TouchableOpacity>
+                )}
+
+                <View className="px-2 py-2">
+                    <View className="bg-white border-b border-b-gray-300 pt-2 pb-4">
+                        <View className="">
+                            <H3 className="text-2xl text-center text-indigo-600 font-extrabold tracking-wide">
+                                ग्रामपंचायत {gp?.grampanchayat_name || "-"}
+                            </H3>
+                        </View>
+                    </View>
+
+                    <Label className="text-lg text-center">मालमत्ता क्रमांक टाकून धारक शोधा.</Label>
+
+                    <View className="mb-4">
+                        <Text className="mb-2 font-bold">शोधण्याचा निकष</Text>
+
+                        <View className="border border-[#1E88E5] rounded-lg bg-white overflow-hidden">
+                            <Picker
+                                selectedValue={searchTypeOfUser}
+                                onValueChange={(value) => setSearchTypeOfUser(value)}
+                                dropdownIconColor="#1E88E5"
+                                style={{
+                                    color: "#111827", // Tailwind doesn't apply color to Picker text directly
+                                    backgroundColor: "white",
+                                }}
+                            >
+                                <Picker.Item label="-- निवडा --" value="" />
+                                <Picker.Item label="मालमत्ताधारक नाव" value="1" />
+                                <Picker.Item label="मालमत्ता क्रमांक" value="2" />
+                                <Picker.Item label="भोगवटदाराचे नाव" value="3" />
+                            </Picker>
+                        </View>
+                    </View>
+
+                    <Autocomplete
+                        value={searchText}
+                        onChange={handleMalmattaDharakSearch}
+                        onSelect={(item) => handleSearchUser(item.id)}
+                        data={idLabelPairs}
+                        placeholder=""
+                        inputStyle={{ borderWidth: 2 }}
+                        loading={isLoading}
+                        listClass="rounded-sm"
+                        getDisplayValue={(item) => item.label}
+                        renderItem={({ item, onSelect }) => (
+                            <TouchableOpacity onPress={onSelect} className="px-3 py-4 border-b border-gray-200">
+                                <Text className="text-blue-900 font-semibold text-base">
+                                    मा. क्र. {item.feu_malmattaNo}
+                                </Text>
+                                <Text className="text-blue-700 mt-2 text-sm tracking-wide">
+                                    मा. धारक: {item.feu_ownerName}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                        renderEmpty={() => <Text className="p-3 text-gray-400">No matching मालमत्ता धारक found</Text>}
+                    />
+                </View>
             </View>
 
             <ScrollView className="bg-gray-50">
@@ -456,7 +576,10 @@ const HomeScreen = () => {
                                     <ServerImage
                                         className="w-full h-52"
                                         imageClassName="w-full h-full"
-                                        src={`/home_map_image/home_photo/${selectedMalmattaDharak.feu_image || `${selectedMalmattaDharak.feu_malmattaNo}.jpeg`}`}
+                                        src={
+                                            selectedMalmattaDharak.local_image_uri ||
+                                            `/home_map_image/home_photo/${selectedMalmattaDharak.feu_image || `${selectedMalmattaDharak.feu_malmattaNo}.jpeg`}`
+                                        }
                                         loading="lazy"
                                     />
                                 </View>
