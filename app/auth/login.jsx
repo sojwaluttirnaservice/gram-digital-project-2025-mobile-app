@@ -73,6 +73,10 @@ const LoginScreen = () => {
     }, []);
 
     const handleLogin = async () => {
+        if (!serverUrl) {
+            Alert.alert("वेबसाईट निवडा", "कृपया लॉगिन करण्यापूर्वी तुमची ग्रामपंचायत वेबसाईट निवडा.");
+            return;
+        }
         try {
             let { success, data } = await instance.post("/auth/login", inputUser);
 
@@ -81,11 +85,12 @@ const LoginScreen = () => {
                 
                 if (selectedMode === "offline") {
                     dispatch(setIsConnected(false));
-                    setShowOfflineModal(true);
                 } else {
                     dispatch(setIsConnected(true));
-                    router.replace("/(tabs)");
                 }
+                
+                // Show download/sync modal on every successful login
+                setShowOfflineModal(true);
             }
         } catch (err) {
             console.log(err);
@@ -135,10 +140,16 @@ const LoginScreen = () => {
                                 <Picker
                                     selectedValue={serverUrl}
                                     onValueChange={(itemValue, itemIndex) => {
+                                        if (!itemValue) {
+                                            dispatch(setServerUrl(""));
+                                            dispatch(setGp({ grampanchayat_name: "" }));
+                                            return;
+                                        }
                                         let selectIndex = isDev ? itemIndex - 2 : itemIndex - 1;
+                                        const gpName = websites[selectIndex]?.grampanchayat_name || "";
                                         dispatch(
                                             setGp({
-                                                grampanchayat_name: websites[selectIndex].grampanchayat_name,
+                                                grampanchayat_name: gpName,
                                             }),
                                         );
                                         dispatch(setServerUrl(itemValue));

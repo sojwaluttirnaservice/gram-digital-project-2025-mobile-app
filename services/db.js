@@ -234,6 +234,11 @@ class DatabaseService {
         return result ? result.count : 0;
     }
 
+    async wipeOfflineData(serverUrl) {
+        if (!serverUrl) return;
+        await this.db.runAsync("DELETE FROM dharaks WHERE server_url = ?", [serverUrl]);
+    }
+
     // --- Upload Queue Actions ---
     async queueOfflineUpload(serverUrl, dharakId, metadata) {
         if (!serverUrl || !dharakId) return;

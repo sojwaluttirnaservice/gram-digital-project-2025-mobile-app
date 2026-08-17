@@ -17,9 +17,15 @@ export default function OfflineDownloadModal({ isVisible, serverUrl, apiInstance
     }, [isVisible, serverUrl]);
 
     const handleRedownload = async () => {
-        await dbService.wipeOfflineData(serverUrl);
-        setExistingCount(0);
-        startDownload(1);
+        try {
+            setError(null);
+            await dbService.wipeOfflineData(serverUrl);
+            setExistingCount(0);
+            startDownload(1);
+        } catch (e) {
+            console.error("Wipe failed:", e);
+            setError("जुनी माहिती डिलीट करता आली नाही. कृपया पुन्हा प्रयत्न करा.");
+        }
     };
 
     const startDownload = async (pageToStart = 1) => {
