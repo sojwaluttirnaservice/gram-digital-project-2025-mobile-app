@@ -102,6 +102,9 @@ export function useApi(): {
         if (!url) return null;
 
         const _client = client.create(key, { baseURL: url });
+        
+        // Always update the baseURL in case the client was already cached
+        _client.setBaseURL(url);
 
         if (!(_client as any)._hasInterceptor) {
             // Add interceptors exactly once
