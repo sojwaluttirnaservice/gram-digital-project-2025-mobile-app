@@ -1,6 +1,7 @@
 // components/Autocomplete.js
 import clsx from "clsx";
 import React, { useCallback, useState } from "react";
+import { Feather } from "@expo/vector-icons";
 import {
     ActivityIndicator,
     FlatList,
@@ -11,6 +12,7 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
     View,
+    ScrollView,
 } from "react-native";
 
 /**
@@ -59,6 +61,8 @@ const Autocomplete = ({
     value,
     onChange,
     onSelect,
+    onClear,
+    allowClear = true,
     placeholder = "Type to search...",
     loading = false,
     maxEntries = 10,
@@ -99,6 +103,13 @@ const Autocomplete = ({
         [onChange],
     );
 
+    /** Handle clearing input */
+    const handleClear = useCallback(() => {
+        onChange?.("");
+        onClear?.();
+        setShowList(false);
+    }, [onChange, onClear]);
+
     /** Handle selecting an item */
     const handleSelect = useCallback(
         (item) => {
@@ -128,14 +139,37 @@ const Autocomplete = ({
 
     /** Default input renderer */
     const defaultRenderInput = (props) => (
-        <TextInput
-            {...props}
-            placeholder={props.placeholder}
-            value={props.value ?? ""}
-            onChangeText={props.onChangeText}
-            className={clsx("border border-gray-300 rounded-xl p-3 text-base bg-white", inputClass)}
-            style={inputStyle}
-        />
+        <View className="relative justify-center w-full">
+            <TextInput
+                {...props}
+                placeholder={props.placeholder}
+                value={props.value ?? ""}
+                onChangeText={props.onChangeText}
+                onFocus={(e) => {
+                    setShowList(true);
+                    props.onFocus?.(e);
+                }}
+                className={clsx("border border-gray-300 rounded-xl p-3 pr-10 text-base bg-white", inputClass)}
+                style={inputStyle}
+            />
+            {allowClear && Boolean(props.value) && (
+                <TouchableOpacity
+                    onPress={handleClear}
+                    style={{
+                        position: "absolute",
+                        right: 12,
+                        top: 0,
+                        bottom: 0,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 10,
+                    }}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                    <Feather name="x-circle" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+            )}
+        </View>
     );
 
     /** Backdrop to dismiss when dropdown is open (avoids swallowing child presses) */
@@ -165,6 +199,7 @@ const Autocomplete = ({
                       placeholder,
                       value,
                       onChangeText: handleChange,
+                      onClear: handleClear,
                   })
                 : defaultRenderInput({
                       placeholder,
@@ -184,33 +219,33 @@ const Autocomplete = ({
             {showList && (
                 <View
                     className={clsx(
-                        "absolute top-full left-0 right-0 z-50 border border-gray-300 rounded-xl mt-1 bg-white",
+                        "z-50 border border-gray-300 rounded-xl mt-1 bg-white",
                         listClass,
                     )}
                     style={[{ maxHeight: maxDropdownHeight }, listStyle]}
                 >
                     {data.length > 0 ? (
-                        <FlatList
-                            // disableVirtualization={true}
-                            data={data.slice(0, maxEntries)}
-                            keyExtractor={(_, index) => index.toString()}
-                            renderItem={({ item, index }) =>
-                                renderItem
-                                    ? renderItem({
-                                          item,
-                                          index,
-                                          onSelect: () => handleSelect(item),
-                                      })
-                                    : defaultRenderItem({
-                                          item,
-                                          index,
-                                          onSelect: () => handleSelect(item),
-                                      })
-                            }
-                            keyboardShouldPersistTaps="always" // ensure taps register with keyboard open
-                            nestedScrollEnabled // allow scroll within scroll
+                        <ScrollView
+                            keyboardShouldPersistTaps="always"
+                            nestedScrollEnabled
                             showsVerticalScrollIndicator
-                        />
+                        >
+                            {data.slice(0, maxEntries).map((item, index) => (
+                                <React.Fragment key={index}>
+                                    {renderItem
+                                        ? renderItem({
+                                              item,
+                                              index,
+                                              onSelect: () => handleSelect(item),
+                                          })
+                                        : defaultRenderItem({
+                                              item,
+                                              index,
+                                              onSelect: () => handleSelect(item),
+                                          })}
+                                </React.Fragment>
+                            ))}
+                        </ScrollView>
                     ) : (
                         (renderEmpty?.() ?? <Text className="p-3 text-gray-400 text-sm">No results found</Text>)
                     )}

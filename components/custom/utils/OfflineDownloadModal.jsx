@@ -1,6 +1,7 @@
 import { dbService } from '@/services/db';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function OfflineDownloadModal({ isVisible, serverUrl, apiInstance, onComplete, onCancel }) {
     const [progress, setProgress] = useState(0);
@@ -39,9 +40,8 @@ export default function OfflineDownloadModal({ isVisible, serverUrl, apiInstance
             while (hasMore) {
                 setCurrentPage(page);
                 const res = await apiInstance.get(`/namuna/8/list/all?page=${page}&limit=${limit}`);
-                // If it's an HTML string (e.g. 404 page) or success is not true, throw error!
                 if (!res || typeof res === 'string' || res.success !== true) {
-                    throw new Error(res?.message || "API returned an unexpected response. Are you on the correct network?");
+                    throw new Error(res?.message || "API returned an unexpected response.");
                 }
                 const users = res.data?.f8Users || [];
                 const pagination = res.data?.pagination;
@@ -74,69 +74,85 @@ export default function OfflineDownloadModal({ isVisible, serverUrl, apiInstance
     return (
         <Modal visible={isVisible} transparent animationType="fade">
             <View className="flex-1 bg-black/50 justify-center items-center px-6">
-                <View className="bg-white p-6 rounded-xl w-full shadow-lg">
-                    <Text className="text-xl font-bold mb-4 text-center">ऑफलाईन डेटा डाउनलोड</Text>
+                <View className="bg-white p-6 rounded-2xl w-full shadow-lg relative">
+                    {/* Top Right Close Button (hidden during download) */}
+                    {!isDownloading && (
+                        <TouchableOpacity 
+                            onPress={onCancel}
+                            className="absolute right-4 top-4 p-1.5 bg-slate-50 border border-slate-100 rounded-full active:bg-slate-100 z-10"
+                        >
+                            <Feather name="x" size={18} color="#64748b" />
+                        </TouchableOpacity>
+                    )}
+
+                    <Text className="text-xl font-bold mb-4 text-center text-slate-800 pr-6">ऑफलाईन डेटा डाउनलोड</Text>
                     
                     {isDownloading ? (
                         <View className="items-center py-4">
                             <ActivityIndicator size="large" color="#4F46E5" />
-                            <Text className="mt-4 text-gray-700 font-medium">
+                            <Text className="mt-4 text-gray-700 font-bold text-base">
                                 डाउनलोड होत आहे... {progress} / {total || '?'}
                             </Text>
-                            <Text className="text-xs text-gray-500 mt-2 text-center">
+                            <Text className="text-xs text-gray-500 mt-2 text-center leading-4">
                                 कृपया ॲप चालू ठेवा आणि स्क्रीन बंद होऊ देऊ नका.
                             </Text>
                         </View>
                     ) : error ? (
                         <View>
-                            <Text className="text-red-500 text-center mb-6 font-medium">{error}</Text>
+                            <Text className="text-red-500 text-center mb-6 font-semibold leading-5">{error}</Text>
                             <TouchableOpacity 
                                 onPress={() => startDownload(currentPage)}
-                                className="bg-indigo-600 py-3 rounded-lg items-center mb-3"
+                                className="bg-indigo-600 py-3.5 rounded-xl items-center mb-3 active:opacity-90"
                             >
                                 <Text className="text-white font-bold text-base">पुन्हा प्रयत्न करा</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
                                 onPress={onCancel}
-                                className="bg-gray-200 py-3 rounded-lg items-center"
+                                className="bg-slate-100 border border-slate-200 py-3.5 rounded-xl items-center active:bg-slate-200"
                             >
-                                <Text className="text-gray-800 font-bold text-base">रद्द करा</Text>
+                                <Text className="text-slate-700 font-bold text-base">बंद करा (Close)</Text>
                             </TouchableOpacity>
                         </View>
                     ) : existingCount > 0 ? (
                         <View>
-                            <Text className="text-gray-600 text-center mb-6 leading-5">
+                            <Text className="text-slate-600 text-center mb-6 leading-5 font-medium">
                                 या गावासाठी तुमची {existingCount} मालमत्ता मोबाईलमध्ये आधीपासून डाउनलोड आहे.
                             </Text>
                             <TouchableOpacity 
                                 onPress={handleRedownload}
-                                className="bg-red-500 py-3 rounded-lg items-center mb-3"
+                                className="bg-red-500 py-3.5 rounded-xl items-center mb-3 active:opacity-90"
                             >
-                                <Text className="text-white font-bold text-base">जुनी माहिती डिलीट करा आणि नवीन डाउनलोड करा</Text>
+                                <Text className="text-white font-bold text-base">जुनी माहिती डिलीट करा व नवीन डाउनलोड करा</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
                                 onPress={onComplete}
-                                className="bg-indigo-600 py-3 rounded-lg items-center"
+                                className="bg-indigo-600 py-3.5 rounded-xl items-center mb-3 active:opacity-90"
                             >
-                                <Text className="text-white font-bold text-base">पुढे जा</Text>
+                                <Text className="text-white font-bold text-base">पुढे जा (माहिती न बदलता)</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={onCancel}
+                                className="bg-slate-100 border border-slate-200 py-3.5 rounded-xl items-center active:bg-slate-200"
+                            >
+                                <Text className="text-slate-700 font-bold text-base">बंद करा (Close)</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
                         <View>
-                            <Text className="text-gray-600 text-center mb-6 leading-5">
-                                तुम्हाला सर्व मालमत्ता मोबाईलमध्ये डाउनलोड करायच्या आहेत का? याने तुम्ही इंटरनेट नसतानाही माहिती बघू शकाल.
+                            <Text className="text-slate-600 text-center mb-6 leading-5 font-medium">
+                                तुम्हाला सर्व मालमत्ता मोबाईलमध्ये डाउनलोड करायच्या आहेत का? याने तुम्ही इंटरनेट नसतानाही काम करू शकाल.
                             </Text>
                             <TouchableOpacity 
                                 onPress={() => startDownload(1)}
-                                className="bg-indigo-600 py-3 rounded-lg items-center mb-3"
+                                className="bg-indigo-600 py-3.5 rounded-xl items-center mb-3 active:opacity-90"
                             >
                                 <Text className="text-white font-bold text-base">डाउनलोड सुरू करा</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
                                 onPress={onCancel}
-                                className="bg-gray-100 border border-gray-300 py-3 rounded-lg items-center"
+                                className="bg-slate-100 border border-slate-200 py-3.5 rounded-xl items-center active:bg-slate-200"
                             >
-                                <Text className="text-gray-800 font-bold text-base">नंतर करू (Skip)</Text>
+                                <Text className="text-slate-700 font-bold text-base">नंतर करू (Skip)</Text>
                             </TouchableOpacity>
                         </View>
                     )}

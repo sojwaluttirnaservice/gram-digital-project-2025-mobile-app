@@ -59,30 +59,29 @@ const FileInput = React.forwardRef((props, ref) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Use controlled `value` if provided, otherwise internal state
-    const file = value ?? internalFile;
+    // Use controlled `value` if provided (including null), otherwise internal state
+    const file = value !== undefined ? value : internalFile;
 
-    // Utility: call both callbacks (if supplied) and update internal state if uncontrolled
+    // Keep internal state in sync when controlled value prop changes
+    React.useEffect(() => {
+        if (value !== undefined) {
+            setInternalFile(value);
+        }
+    }, [value]);
+
+    // Utility: call both callbacks (if supplied) and update internal state
     const emitPick = useCallback(
         (f) => {
-            if (value === undefined) {
-                // uncontrolled — update internal state
-                setInternalFile(f);
-            }
+            setInternalFile(f);
             onPick?.(f);
             onChange?.(f);
         },
-        [onPick, onChange, value],
+        [onPick, onChange],
     );
 
     // Try to pick the best media constant to avoid deprecation warnings across expo versions.
     const MEDIA_IMAGES = useMemo(() => {
-        // prefer new API if available
-        if (ImagePicker?.MediaType && ImagePicker.MediaType.Images) return ImagePicker.MediaType.Images;
-        // fallback to older constant, if present
-        if (ImagePicker?.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images)
-            return ImagePicker.MediaTypeOptions.Images;
-        // last resort: undefined (library will fallback)
+        if (ImagePicker?.MediaTypeOptions?.Images) return ImagePicker.MediaTypeOptions.Images;
         return undefined;
     }, []);
 

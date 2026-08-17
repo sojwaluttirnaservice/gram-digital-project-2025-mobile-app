@@ -225,7 +225,7 @@ class DatabaseService {
 
     async getAllLocalDharaks(serverUrl, limit = 100, offset = 0) {
         if (!serverUrl) return [];
-        return await this.db.getAllAsync("SELECT id, feu_malmattaNo, feu_ownerName FROM dharaks WHERE server_url = ? ORDER BY feu_malmattaNo ASC LIMIT ? OFFSET ?", [serverUrl, limit, offset]);
+        return await this.db.getAllAsync("SELECT * FROM dharaks WHERE server_url = ? ORDER BY feu_malmattaNo ASC LIMIT ? OFFSET ?", [serverUrl, limit, offset]);
     }
 
     async getLocalDharaksCount(serverUrl) {

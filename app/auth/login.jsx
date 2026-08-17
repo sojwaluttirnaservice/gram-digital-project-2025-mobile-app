@@ -1,21 +1,21 @@
 import Input from "@/components/custom/form/Input";
 import ScreenWrapper from "@/components/custom/screens/ScreenWrapper";
 import { app } from "@/data/app";
-import { setServerUrl } from "@/redux/slices/connectionSlice";
+import { setServerUrl, setIsConnected } from "@/redux/slices/connectionSlice";
 import { setGp } from "@/redux/slices/gpSlice";
-import { login } from "@/redux/slices/userSlice";
+import { login, logout } from "@/redux/slices/userSlice";
 import { setWebsites } from "@/redux/slices/websitesSlice";
-import { Feather, MaterialIcons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
+import { Feather, MaterialIcons, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { useEffect, useState, useMemo } from "react";
+import { Alert, Image, Pressable, Text, View, ActivityIndicator } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { useApi } from "../../hooks/custom/useApi";
 import { getErrorMessage } from "@/utils/errorUtils";
 import OfflineDownloadModal from "@/components/custom/utils/OfflineDownloadModal";
-import { setIsConnected } from "@/redux/slices/connectionSlice";
+import Autocomplete from "@/components/custom/form/Autocomplete";
+import { saveUserState, saveServerUrl, saveGpInfo, getUserState, getServerUrl, getGpInfo } from "@/utils/storage";
 
 const initialState = {
     id: "",
@@ -31,46 +31,96 @@ const LoginScreen = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [selectedMode, setSelectedMode] = useState("online");
     const [showOfflineModal, setShowOfflineModal] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [searchGp, setSearchGp] = useState("");
 
     const { serverUrl, isDev } = useSelector((state) => state.connection);
-
     const websites = useSelector((state) => state.websites);
-
+    const user = useSelector((state) => state.user);
+    const gp = useSelector((state) => state.gp);
     const [location, setLocation] = useState(null);
-
     const dispatch = useDispatch();
+
+    // Auto-restore persisted state from AsyncStorage on mount
+    useEffect(() => {
+        const restoreSavedState = async () => {
+            const savedServer = await getServerUrl();
+            const savedGp = await getGpInfo();
+            const savedUser = await getUserState();
+
+            if (savedServer && !serverUrl) {
+                dispatch(setServerUrl(savedServer));
+            }
+            if (savedGp?.grampanchayat_name) {
+                if (!gp?.grampanchayat_name) dispatch(setGp(savedGp));
+                setSearchGp(savedGp.grampanchayat_name);
+            }
+            if (savedUser && (!user || !user.isAuthenticated)) {
+                dispatch(login(savedUser));
+            }
+        };
+        restoreSavedState();
+    }, []);
+
+    // Auto-redirect if already authenticated
+    useEffect(() => {
+        if (user && user.isAuthenticated && user.token) {
+            router.replace("/(tabs)");
+        }
+    }, [user]);
 
     // FOR LOCATION ACCESS
     useEffect(() => {
         const getCurrentLocation = async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
-
             if (status !== "granted") {
                 Alert.alert("Location Required", "You must enable location access to use this app from Settings.");
-                return; // ❌ stop here
+                return;
             }
-
-            let location = await Location.getCurrentPositionAsync({});
-            setLocation(location);
+            let loc = await Location.getCurrentPositionAsync({});
+            setLocation(loc);
         };
-
         getCurrentLocation();
     }, []);
 
     const fetchWebsites = async () => {
+        setIsRefreshing(true);
         try {
             let { success, data } = await instance.get("/websites");
-
             if (success) {
                 dispatch(setWebsites(data.websites));
             }
         } catch (err) {
             console.error(err);
+        } finally {
+            setIsRefreshing(false);
         }
     };
+
     useEffect(() => {
         fetchWebsites();
     }, []);
+
+    const gpOptions = useMemo(() => {
+        let options = [];
+        if (isDev) {
+            options.push({ label: "Local (Dev)", value: "http://192.168.1.2:5900", searchString: "local dev http://192.168.1.2:5900" });
+        }
+        if (websites && websites.length > 0) {
+            websites.forEach((web, idx) => {
+                const label = web.grampanchayat_name || web.village_name || `Website ${idx + 1}`;
+                const value = web.website_link || "";
+                options.push({
+                    label,
+                    value,
+                    searchString: `${label} ${value}`.toLowerCase()
+                });
+            });
+        }
+        if (!searchGp) return options;
+        const q = searchGp.toLowerCase();
+        return options.filter(opt => opt.searchString.includes(q));
+    }, [websites, isDev, searchGp]);
 
     const handleLogin = async () => {
         if (!serverUrl) {
@@ -79,17 +129,15 @@ const LoginScreen = () => {
         }
         try {
             let { success, data } = await instance.post("/auth/login", inputUser);
-
             if (success) {
                 dispatch(login(data.user));
-                
+                await saveUserState(data.user);
+                await saveServerUrl(serverUrl);
                 if (selectedMode === "offline") {
                     dispatch(setIsConnected(false));
                 } else {
                     dispatch(setIsConnected(true));
                 }
-                
-                // Show download/sync modal on every successful login
                 setShowOfflineModal(true);
             }
         } catch (err) {
@@ -99,17 +147,34 @@ const LoginScreen = () => {
     };
 
     return (
-        <ScreenWrapper>
-            <View className="flex-1 justify-center px-6 bg-white">
-                {/* Title */}
-                <Text className="text-3xl font-bold mb-8 text-gray-800 text-center">Welcome To {app.name}</Text>
+        <ScreenWrapper scroll>
+            <View className="flex-1 bg-slate-50">
 
-                {/* Form */}
-                <View className="flex-col gap-4">
-                    {/* Username */}
+                {/* ─── Compact Hero Banner ─── */}
+                <View className="bg-indigo-700 pt-10 pb-8 px-6 items-center rounded-b-[30px] flex-row justify-center">
+                    <View className="bg-white p-1 rounded-xl shadow-md mr-4">
+                        <Image
+                            source={require("../../assets/images/logo.png")}
+                            style={{ width: 45, height: 45, borderRadius: 8 }}
+                            resizeMode="contain"
+                        />
+                    </View>
                     <View>
+                        <Text className="text-white text-2xl font-extrabold tracking-wider">
+                            {app.name}
+                        </Text>
+                        <Text className="text-indigo-200 text-xs font-semibold mt-0.5">
+                            ग्राम डिजिटल प्रकल्प — ग्रामपंचायत
+                        </Text>
+                    </View>
+                </View>
+
+                {/* ─── Compact Form Card ─── */}
+                <View className="mx-4 -mt-4 bg-white rounded-2xl shadow-md border border-slate-100 p-5 mb-4">
+                    {/* Username */}
+                    <View className="mb-3">
                         <Input
-                            label="Username"
+                            label="वापरकर्ता नाव (Username)"
                             value={inputUser.username}
                             isLabelFloating
                             onChangeText={(text) => setInputUser({ ...inputUser, username: text })}
@@ -117,115 +182,173 @@ const LoginScreen = () => {
                     </View>
 
                     {/* Password */}
-                    <View>
+                    <View className="mb-2">
                         <Input
-                            label="Password"
+                            label="पासवर्ड (Password)"
                             value={inputUser.password}
                             isLabelFloating
                             secureTextEntry={!showPassword}
                             onChangeText={(text) => setInputUser({ ...inputUser, password: text })}
                         />
-
-                        <Pressable onPress={() => setShowPassword(!showPassword)} className="mt-2 self-end">
-                            <View className="flex flex-row gap-2">
-                                <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#6b7280" />
-                            </View>
+                        <Pressable
+                            onPress={() => setShowPassword(!showPassword)}
+                            className="mt-1.5 self-end flex-row items-center"
+                        >
+                            <Feather name={showPassword ? "eye" : "eye-off"} size={14} color="#94a3b8" />
+                            <Text className="text-xs text-slate-400 ml-1.5">
+                                {showPassword ? "लपवा" : "दाखवा"}
+                            </Text>
                         </Pressable>
                     </View>
 
-                    {/* Village Name */}
-                    <View>
-                        <View className="border border-gray-300 rounded-lg overflow-hidden">
+                    {/* Compact GP Picker */}
+                    <View className="mb-3 mt-1">
+                        <View className="flex-row items-center justify-between mb-1.5">
+                            <Text className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">
+                                ग्रामपंचायत निवडा
+                            </Text>
+                            <Pressable
+                                onPress={fetchWebsites}
+                                disabled={isRefreshing}
+                                className={`flex-row items-center px-2 py-0.5 rounded-full ${isRefreshing ? "bg-slate-200 opacity-70" : "bg-slate-100 active:opacity-70"}`}
+                            >
+                                {isRefreshing ? (
+                                    <ActivityIndicator size={12} color="#64748b" />
+                                ) : (
+                                    <MaterialIcons name="refresh" size={12} color="#64748b" />
+                                )}
+                                <Text className="text-slate-600 text-2xs font-bold ml-1">
+                                    {isRefreshing ? "लोडिंग..." : "रिफ्रेश"}
+                                </Text>
+                            </Pressable>
+                        </View>
+
+                        <View className="mb-2 z-50">
                             {websites?.length > 0 && (
-                                <Picker
-                                    selectedValue={serverUrl}
-                                    onValueChange={(itemValue, itemIndex) => {
-                                        if (!itemValue) {
-                                            dispatch(setServerUrl(""));
-                                            dispatch(setGp({ grampanchayat_name: "" }));
-                                            return;
-                                        }
-                                        let selectIndex = isDev ? itemIndex - 2 : itemIndex - 1;
-                                        const gpName = websites[selectIndex]?.grampanchayat_name || "";
-                                        dispatch(
-                                            setGp({
-                                                grampanchayat_name: gpName,
-                                            }),
-                                        );
-                                        dispatch(setServerUrl(itemValue));
+                                <Autocomplete
+                                    data={gpOptions}
+                                    value={searchGp}
+                                    onChange={setSearchGp}
+                                    onClear={() => {
+                                        dispatch(setServerUrl(""));
+                                        dispatch(setGp({ grampanchayat_name: "" }));
+                                        saveServerUrl("");
+                                        saveGpInfo(null);
                                     }}
-                                    dropdownIconColor="#374151" // arrow color
-                                    style={{
-                                        color: "#111827",
-                                        backgroundColor: "white",
-                                    }} // text color + bg
-                                >
-                                    {/* Default placeholder */}
-                                    <Picker.Item key="placeholder" label="--Select--" value="" />
-
-                                    {isDev && <Picker.Item key="local" label="Local" value="http://192.168.1.2:5900" />}
-
-                                    {/* Dynamic websites list */}
-                                    {websites.map((web, idx) => (
-                                        <Picker.Item
-                                            key={web.id || idx}
-                                            label={web.grampanchayat_name || web.village_name || `Website ${idx + 1}`}
-                                            value={web.website_link}
-                                        />
-                                    ))}
-                                </Picker>
+                                    onSelect={(item) => {
+                                        if (item) {
+                                            dispatch(setGp({ grampanchayat_name: item.label }));
+                                            dispatch(setServerUrl(item.value));
+                                            saveGpInfo({ grampanchayat_name: item.label });
+                                            saveServerUrl(item.value);
+                                        }
+                                    }}
+                                    placeholder="शोधा..."
+                                    getDisplayValue={(item) => item.label}
+                                    maxDropdownHeight={200}
+                                    maxEntries={1000}
+                                />
                             )}
                         </View>
 
-                        <View className="mt-2 flex items-end">
+                        {serverUrl ? (
+                            <View className="flex-row items-center mt-1.5 ml-1">
+                                <Ionicons name="checkmark-circle" size={13} color="#10b981" />
+                                <Text className="text-xs text-emerald-600 font-bold ml-1">ग्रामपंचायत निवडली आहे ✓</Text>
+                            </View>
+                        ) : (
+                            <Text className="text-2xs text-rose-400 font-semibold mt-1 ml-1">
+                                ⚠️ लॉगिन करण्यापूर्वी ग्रामपंचायत निवडणे आवश्यक आहे
+                            </Text>
+                        )}
+                    </View>
+
+                    {/* Segmented Mode Selector */}
+                    <View className="mb-4">
+                        <Text className="text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">
+                            कनेक्शन मोड
+                        </Text>
+                        <View className="flex-row bg-slate-100 p-1 rounded-xl">
                             <Pressable
-                                onPress={fetchWebsites}
-                                className="bg-indigo-500 px-4 py-2 rounded-md active:opacity-80 flex-row items-center self-start"
+                                onPress={() => setSelectedMode("online")}
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexDirection: "row",
+                                    backgroundColor: selectedMode === "online" ? "#ffffff" : "transparent",
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 1 },
+                                    shadowOpacity: selectedMode === "online" ? 0.08 : 0,
+                                    shadowRadius: 1.5,
+                                    elevation: selectedMode === "online" ? 1 : 0,
+                                }}
                             >
-                                <MaterialIcons name="refresh" size={20} color="white" />
-                                <Text className="text-white text-base font-medium ml-2">Refresh Site List</Text>
+                                <Text className="text-sm mr-1">🌐</Text>
+                                <Text
+                                    style={{
+                                        fontSize: 12,
+                                        fontWeight: "800",
+                                        color: selectedMode === "online" ? "#4f46e5" : "#64748b",
+                                    }}
+                                >
+                                    ऑनलाईन (Online)
+                                </Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setSelectedMode("offline")}
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexDirection: "row",
+                                    backgroundColor: selectedMode === "offline" ? "#ffffff" : "transparent",
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 1 },
+                                    shadowOpacity: selectedMode === "offline" ? 0.08 : 0,
+                                    shadowRadius: 1.5,
+                                    elevation: selectedMode === "offline" ? 1 : 0,
+                                }}
+                            >
+                                <Text className="text-sm mr-1">📵</Text>
+                                <Text
+                                    style={{
+                                        fontSize: 12,
+                                        fontWeight: "800",
+                                        color: selectedMode === "offline" ? "#d97706" : "#64748b",
+                                    }}
+                                >
+                                    ऑफलाईन (Offline)
+                                </Text>
                             </Pressable>
                         </View>
                     </View>
 
-                    {/* Mode Selector */}
-                    <View className="flex-row justify-between mt-2">
-                        <Pressable 
-                            onPress={() => setSelectedMode("online")}
-                            className={`flex-1 py-3 mr-2 rounded-xl border ${selectedMode === "online" ? "bg-indigo-50 border-indigo-500" : "bg-white border-gray-300"}`}
-                        >
-                            <Text className={`text-center font-bold ${selectedMode === "online" ? "text-indigo-600" : "text-gray-500"}`}>
-                                🌐 Online
-                            </Text>
-                        </Pressable>
-
-                        <Pressable 
-                            onPress={() => setSelectedMode("offline")}
-                            className={`flex-1 py-3 ml-2 rounded-xl border ${selectedMode === "offline" ? "bg-indigo-50 border-indigo-500" : "bg-white border-gray-300"}`}
-                        >
-                            <Text className={`text-center font-bold ${selectedMode === "offline" ? "text-indigo-600" : "text-gray-500"}`}>
-                                📵 Offline
-                            </Text>
-                        </Pressable>
-                    </View>
-
-                    {/* Button */}
-
-                    <View className="mt-4">
-                        <Pressable
-                            onPress={handleLogin}
-                            className="w-full bg-indigo-500 rounded-xl py-4 items-center shadow-md active:opacity-80"
-                        >
-                            <Text className="text-white font-semibold text-lg">Login</Text>
-                        </Pressable>
-
-                        {/* <Button variant='solid' size='sm' className='bg-red-500 px-4 py-2'>
-                            Login
-                        </Button> */}
-                    </View>
+                    {/* Login Button */}
+                    <Pressable
+                        onPress={handleLogin}
+                        className="w-full bg-indigo-600 rounded-xl py-3.5 items-center active:opacity-90 shadow-md shadow-indigo-600/10"
+                    >
+                        <Text className="text-white font-extrabold text-base tracking-wide">
+                            लॉगिन करा
+                        </Text>
+                    </Pressable>
                 </View>
+
+                {/* Footer */}
+                <View className="items-center pb-6">
+                    <Text className="text-2xs text-slate-400 text-center">
+                        © {new Date().getFullYear()} ग्राम डिजिटल प्रकल्प · v{app.version}
+                    </Text>
+                </View>
+
             </View>
-            <OfflineDownloadModal 
+
+            <OfflineDownloadModal
                 isVisible={showOfflineModal}
                 serverUrl={serverUrl}
                 apiInstance={api}
@@ -235,7 +358,7 @@ const LoginScreen = () => {
                 }}
                 onCancel={() => {
                     setShowOfflineModal(false);
-                    router.replace("/(tabs)");
+                    dispatch(logout());
                 }}
             />
         </ScreenWrapper>
