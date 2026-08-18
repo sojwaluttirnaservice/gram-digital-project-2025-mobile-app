@@ -185,6 +185,7 @@ const LoginScreen = () => {
                     <View className="mb-2">
                         <Input
                             label="पासवर्ड (Password)"
+                            mode="password"
                             value={inputUser.password}
                             isLabelFloating
                             secureTextEntry={!showPassword}

@@ -144,7 +144,8 @@ const Input = forwardRef<InputHandle, InputProps>(function Input(props, ref) {
         }
     }, [mode]);
 
-    const finalSecure = mode === "password" ? !isPasswordVisible : Boolean(secureTextEntry);
+    const isPasswordMode = mode === "password" || Boolean(secureTextEntry);
+    const finalSecure = secureTextEntry !== undefined ? Boolean(secureTextEntry) : (mode === "password" ? !isPasswordVisible : false);
 
     const handleTextChange = (t: string) => {
         if (value == null) setInternalText(t);
@@ -241,7 +242,7 @@ const Input = forwardRef<InputHandle, InputProps>(function Input(props, ref) {
         disabled ? "opacity-50" : undefined,
         className,
     );
-    const inputClass = mergeClass("flex-1 py-3", inputClassName);
+    const inputClass = mergeClass("flex-1 py-3 text-slate-900 text-base font-medium", inputClassName);
 
     return (
         <View className={rootClass} testID={testID} style={{ position: "relative" }}>
@@ -290,6 +291,7 @@ const Input = forwardRef<InputHandle, InputProps>(function Input(props, ref) {
                     <TextInput
                         ref={inputRef}
                         className={inputClass}
+                        style={[{ color: "#0f172a", letterSpacing: finalSecure ? 4 : 0 }, rest.style]}
                         placeholder={enableFloating ? (placeholder ?? "") : placeholder}
                         placeholderTextColor="#9ca3af"
                         editable={!disabled && !readOnly}
@@ -297,8 +299,8 @@ const Input = forwardRef<InputHandle, InputProps>(function Input(props, ref) {
                         onChangeText={handleTextChange}
                         keyboardType={keyboardType as any}
                         secureTextEntry={finalSecure}
-                        autoCapitalize={mode === "email" || mode === "password" ? "none" : "sentences"}
-                        autoCorrect={mode !== "email" && mode !== "password"}
+                        autoCapitalize={mode === "email" || isPasswordMode ? "none" : "sentences"}
+                        autoCorrect={mode !== "email" && !isPasswordMode}
                         multiline={multiline || mode === "multiline"}
                         numberOfLines={numberOfLines}
                         returnKeyType="done"
@@ -313,7 +315,7 @@ const Input = forwardRef<InputHandle, InputProps>(function Input(props, ref) {
                         {...(rest as TextInputProps)}
                     />
 
-                    {mode === "password" ? (
+                    {mode === "password" && secureTextEntry === undefined ? (
                         <Pressable
                             onPress={() => setIsPasswordVisible((v) => !v)}
                             accessibilityRole="button"
